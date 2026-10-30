@@ -21,3 +21,5 @@ Thumbs.db
 
 # Archivos multimedia cargados en desarrollo
 storage/
+
+frontend/.wrangler/
