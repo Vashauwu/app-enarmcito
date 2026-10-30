@@ -1,0 +1,134 @@
+<div class="page-container admin-page">
+  <header class="admin-header">
+    <div>
+      <h1 class="admin-title">Usuarios</h1>
+      <p class="admin-subtitle">
+        @if (auth.can('users.read.staff')) {
+          Alumnos y personal de la plataforma.
+        } @else {
+          Cuentas de alumnos. No ves cuentas del personal ni sus roles.
+        }
+      </p>
+    </div>
+    @if (auth.can('users.create')) {
+      <button matButton="filled" type="button" (click)="invite()" [disabled]="!options.hasValue()">
+        <mat-icon>person_add</mat-icon>
+        Invitar persona
+      </button>
+    }
+  </header>
+
+  <form class="admin-filters" [formGroup]="form" role="search" (submit)="$event.preventDefault()">
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Buscar</mat-label>
+      <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+      <input matInput formControlName="q" maxlength="100" placeholder="Nombre o correo" />
+    </mat-form-field>
+    @if ((options.value()?.roles?.length ?? 0) > 1) {
+      <mat-form-field subscriptSizing="dynamic">
+        <mat-label>Rol</mat-label>
+        <mat-select formControlName="rol">
+          <mat-option value="">Todos</mat-option>
+          @for (rol of options.value()?.roles ?? []; track rol.codigo) {
+            <mat-option [value]="rol.codigo">{{ rol.nombre }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Tier</mat-label>
+      <mat-select formControlName="tierId">
+        <mat-option [value]="null">Todos</mat-option>
+        @for (tier of options.value()?.tiers ?? []; track tier.id) {
+          <mat-option [value]="tier.id">{{ tier.nombre }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Estado</mat-label>
+      <mat-select formControlName="estado">
+        <mat-option value="">Todos</mat-option>
+        <mat-option value="ACTIVO">Activa</mat-option>
+        <mat-option value="BLOQUEADO">Bloqueada</mat-option>
+        <mat-option value="PENDIENTE">Pendiente de activación</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Ordenar por</mat-label>
+      <mat-select formControlName="orden">
+        <mat-option value="recientes">Alta más reciente</mat-option>
+        <mat-option value="ultimoAcceso">Último acceso</mat-option>
+        <mat-option value="nombre">Nombre</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </form>
+
+  @if (users.isLoading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando usuarios" />
+  }
+
+  @if (error(); as message) {
+    <app-state-message icon="cloud_off" tone="error" title="No pudimos cargar los usuarios" [message]="message">
+      <button matButton="tonal" (click)="users.reload()">Reintentar</button>
+    </app-state-message>
+  } @else if (users.hasValue()) {
+    @let result = users.value();
+    @if (result.items.length === 0) {
+      <app-state-message icon="person_search" title="Sin resultados" message="Ningún usuario coincide con los filtros." />
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="result.items" aria-label="Usuarios">
+          <ng-container matColumnDef="persona">
+            <th mat-header-cell *matHeaderCellDef>Persona</th>
+            <td mat-cell *matCellDef="let u">
+              <span class="cell-main">
+                <strong>{{ u.nombre }} {{ u.apellido }}</strong>
+                <span class="cell-secondary">{{ u.correo }}</span>
+              </span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="rol">
+            <th mat-header-cell *matHeaderCellDef>Rol</th>
+            <td mat-cell *matCellDef="let u">{{ roleOf(u) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="tier">
+            <th mat-header-cell *matHeaderCellDef>Tier</th>
+            <td mat-cell *matCellDef="let u">{{ u.tier.nombre }}</td>
+          </ng-container>
+          <ng-container matColumnDef="estado">
+            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <td mat-cell *matCellDef="let u"><app-status-badge [status]="statusOf(u)" /></td>
+          </ng-container>
+          <ng-container matColumnDef="alta">
+            <th mat-header-cell *matHeaderCellDef>Alta</th>
+            <td mat-cell *matCellDef="let u">{{ u.createdAt | date: 'd MMM y' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="acceso">
+            <th mat-header-cell *matHeaderCellDef>Último acceso</th>
+            <td mat-cell *matCellDef="let u">{{ u.lastLoginAt ? (u.lastLoginAt | date: 'd MMM y, HH:mm') : 'Nunca' }}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="columns()"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: columns()"
+            class="clickable"
+            tabindex="0"
+            role="link"
+            [attr.aria-label]="'Ver ficha de ' + row.nombre + ' ' + row.apellido"
+            (click)="open(row)"
+            (keydown.enter)="open(row)"
+          ></tr>
+        </table>
+      </div>
+      <mat-paginator
+        [length]="result.totalItems"
+        [pageIndex]="result.page"
+        [pageSize]="pageSize"
+        [hidePageSize]="true"
+        (page)="changePage($event)"
+        aria-label="Páginas de usuarios"
+      />
+    }
+  }
+</div>

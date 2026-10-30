@@ -1,0 +1,52 @@
+name: Deploy prod
+
+# Sólo se despliega un commit de `main` cuyo CI terminó en verde, y el environment `prod` exige la aprobación de
+# un responsable antes de ejecutar los pasos. Este archivo debe existir en la rama por defecto del repositorio.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build -- --configuration production
+      - name: Deploy frontend to Cloudflare Pages
+        working-directory: frontend
+        run: >-
+          npx wrangler@4 pages deploy "${{ vars.FRONTEND_DIST_DIR }}"
+          --project-name "${{ vars.CLOUDFLARE_PROJECT }}"
+          --branch main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Trigger Render deploy
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK"

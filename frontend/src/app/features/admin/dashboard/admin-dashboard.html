@@ -1,0 +1,111 @@
+<div class="page-container admin-page">
+  <header class="admin-header">
+    <div>
+      <h1 class="admin-title">Hola, {{ auth.user()?.nombre }}</h1>
+      <p class="admin-subtitle">{{ auth.user()?.rolNombre }} · Resumen de lo que puedes gestionar</p>
+    </div>
+    <div class="quick-actions">
+      @if (auth.can('content.create')) {
+        <a matButton="filled" routerLink="/admin/contenido/nuevo">
+          <mat-icon>add</mat-icon>
+          Crear contenido
+        </a>
+      }
+      @if (auth.can('content.review')) {
+        <a matButton="tonal" routerLink="/admin/contenido">
+          <mat-icon>rate_review</mat-icon>
+          Revisar pendientes
+        </a>
+      }
+      @if (auth.can('users.read')) {
+        <a matButton="tonal" routerLink="/admin/usuarios">
+          <mat-icon>person_search</mat-icon>
+          Buscar usuario
+        </a>
+      }
+    </div>
+  </header>
+
+  @if (dashboard.isLoading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando tablero" />
+  } @else if (dashboard.error()) {
+    <app-state-message icon="cloud_off" tone="error" title="No pudimos cargar el tablero">
+      <button matButton="tonal" (click)="dashboard.reload()">Reintentar</button>
+    </app-state-message>
+  } @else if (dashboard.hasValue()) {
+    @let d = dashboard.value();
+
+    @if (d.usuarios; as u) {
+      <h2 class="section-title">Usuarios</h2>
+      <div class="metric-grid">
+        <a class="metric" routerLink="/admin/actividad">
+          <span class="metric-label"><mat-icon aria-hidden="true">how_to_reg</mat-icon>Activos ({{ u.periodoDias }} días)</span>
+          <span class="metric-value">{{ u.activos }}</span>
+        </a>
+        <a class="metric" routerLink="/admin/usuarios" [queryParams]="{ orden: 'recientes' }">
+          <span class="metric-label"><mat-icon aria-hidden="true">person_add</mat-icon>Nuevos ({{ u.periodoDias }} días)</span>
+          <span class="metric-value">{{ u.nuevos }}</span>
+        </a>
+        <a class="metric" [class.metric--alert]="u.bloqueados > 0" routerLink="/admin/usuarios" [queryParams]="{ estado: 'BLOQUEADO' }">
+          <span class="metric-label"><mat-icon aria-hidden="true">block</mat-icon>Bloqueados</span>
+          <span class="metric-value">{{ u.bloqueados }}</span>
+        </a>
+        <a class="metric" routerLink="/admin/usuarios" [queryParams]="{ estado: 'PENDIENTE' }">
+          <span class="metric-label"><mat-icon aria-hidden="true">schedule_send</mat-icon>Pendientes de activar</span>
+          <span class="metric-value">{{ u.pendientes }}</span>
+        </a>
+      </div>
+    }
+
+    @if (d.contenido; as c) {
+      <h2 class="section-title">Contenido</h2>
+      <div class="metric-grid">
+        <a class="metric" routerLink="/admin/contenido">
+          <span class="metric-label"><mat-icon aria-hidden="true">rate_review</mat-icon>Pendiente de revisión</span>
+          <span class="metric-value">{{ c.pendientesRevision }}</span>
+        </a>
+        <a class="metric" [class.metric--alert]="c.revisionVencida > 0" routerLink="/admin/contenido" [queryParams]="{ revisionVencida: true }">
+          <span class="metric-label"><mat-icon aria-hidden="true">event_busy</mat-icon>Revisión vencida</span>
+          <span class="metric-value">{{ c.revisionVencida }}</span>
+        </a>
+        <div class="metric">
+          <span class="metric-label"><mat-icon aria-hidden="true">event_upcoming</mat-icon>Revisión por vencer</span>
+          <span class="metric-value">{{ c.revisionPorVencer }}</span>
+        </div>
+      </div>
+      <ul class="status-list" aria-label="Contenido por estado">
+        @for (estado of contentOrder; track estado) {
+          <li>
+            <a routerLink="/admin/contenido" [queryParams]="{ estado }">
+              <app-status-badge [status]="contentStatus[estado]" />
+              <strong>{{ c.porEstado[estado] ?? 0 }}</strong>
+            </a>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (auth.can('audit.read', 'audit.read.editorial', 'audit.read.own')) {
+      <div class="activity-header">
+        <h2 class="section-title">Actividad reciente</h2>
+        <a matButton routerLink="/admin/auditoria">Ver bitácora</a>
+      </div>
+      @if (d.actividadReciente.length === 0) {
+        <app-state-message icon="history" title="Sin actividad registrada todavía" />
+      } @else {
+        <ol class="timeline">
+          @for (event of d.actividadReciente; track event.id) {
+            <li>
+              <span class="timeline-date">{{ event.ocurridoAt | date: 'd MMM, HH:mm' }}</span>
+              <span class="timeline-text">
+                <strong>{{ event.accionDescripcion }}</strong>
+                <span>{{ event.resumen }}</span>
+                <span class="timeline-actor">{{ event.actor?.correo ?? 'Sistema' }}</span>
+              </span>
+            </li>
+          }
+        </ol>
+      }
+    }
+  }
+</div>

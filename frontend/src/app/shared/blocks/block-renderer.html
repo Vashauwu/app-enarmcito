@@ -1,0 +1,209 @@
+@let d = $any(datos());
+@switch (block().tipo) {
+  @case ('TEXTO_RICO') {
+    <div class="rich" [innerHTML]="d.html"></div>
+  }
+
+  @case ('IMAGEN') {
+    @if (medio(); as m) {
+      <figure class="figure">
+        <img
+          [src]="url(m.id)"
+          [attr.srcset]="srcset(m)"
+          sizes="(max-width: 800px) 100vw, 760px"
+          [alt]="m.textoAlternativo ?? ''"
+          [attr.width]="m.ancho"
+          [attr.height]="m.alto"
+          loading="lazy"
+          decoding="async"
+        />
+        @if (d.pie || m.pie || m.credito) {
+          <figcaption>
+            {{ d.pie ?? m.pie }}
+            @if (m.credito) {
+              <span class="credit">Crédito: {{ m.credito }}</span>
+            }
+          </figcaption>
+        }
+      </figure>
+    }
+  }
+
+  @case ('DIAGRAMA') {
+    <figure class="figure">
+      @if (medio(); as m) {
+        <img
+          [src]="url(m.id)"
+          [attr.srcset]="srcset(m)"
+          sizes="(max-width: 800px) 100vw, 760px"
+          [alt]="d.titulo"
+          [attr.width]="m.ancho"
+          [attr.height]="m.alto"
+          loading="lazy"
+        />
+      }
+      <figcaption>
+        <strong>{{ d.titulo }}</strong>
+        @if (medio()?.credito) {
+          <span class="credit">Crédito: {{ medio()?.credito }}</span>
+        }
+      </figcaption>
+      <details class="text-alt">
+        <summary>Descripción del diagrama en texto</summary>
+        <p>{{ d.descripcionTextual }}</p>
+      </details>
+    </figure>
+  }
+
+  @case ('TABLA') {
+    <div class="table-block">
+      <div class="table-scroll" role="region" [attr.aria-label]="d.titulo ?? 'Tabla'" tabindex="0">
+        <table>
+          @if (d.titulo) {
+            <caption>{{ d.titulo }}</caption>
+          }
+          <thead>
+            <tr>
+              @for (h of d.encabezados; track $index) {
+                <th scope="col">{{ h }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (fila of d.filas; track $index) {
+              <tr>
+                @for (celda of fila; track $index; let primera = $first) {
+                  @if (primera) {
+                    <th scope="row">{{ celda }}</th>
+                  } @else {
+                    <td>{{ celda }}</td>
+                  }
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (d.nota || d.fuente) {
+        <p class="table-note">
+          @if (d.nota) {
+            {{ d.nota }}
+          }
+          @if (d.fuente) {
+            <span>Fuente: {{ d.fuente }}</span>
+          }
+        </p>
+      }
+    </div>
+  }
+
+  @case ('CALLOUT') {
+    <aside class="callout" [attr.data-variant]="d.variante" [attr.aria-label]="callout[d.variante].label">
+      <mat-icon aria-hidden="true">{{ callout[d.variante].icon }}</mat-icon>
+      <div>
+        <p class="callout-title">{{ d.titulo ?? callout[d.variante].label }}</p>
+        <p>{{ d.texto }}</p>
+      </div>
+    </aside>
+  }
+
+  @case ('ALGORITMO') {
+    <section class="algorithm" [attr.aria-label]="'Algoritmo: ' + d.titulo">
+      <header class="algorithm-header">
+        <mat-icon aria-hidden="true">account_tree</mat-icon>
+        <div>
+          <p class="algorithm-title">{{ d.titulo }}</p>
+          <p class="algorithm-meta">Versión {{ d.version }} · {{ d.fuente }}</p>
+        </div>
+      </header>
+      <ol class="steps">
+        @for (paso of pasos(); track paso.id) {
+          <li class="step" [attr.data-tipo]="paso.tipo">
+            <span class="step-number" aria-hidden="true">{{ paso.numero }}</span>
+            <div class="step-body">
+              <span class="step-type">{{ nodo[paso.tipo] }}</span>
+              <p class="step-text">{{ paso.texto }}</p>
+              @if (paso.salidas.length) {
+                <ul class="branches">
+                  @for (s of paso.salidas; track $index) {
+                    <li>
+                      <mat-icon aria-hidden="true">subdirectory_arrow_right</mat-icon>
+                      @if (s.etiqueta) {
+                        <strong>{{ s.etiqueta }}:</strong>
+                      }
+                      ir al paso {{ s.numero }}
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          </li>
+        }
+      </ol>
+      <details class="text-alt">
+        <summary>Descripción del algoritmo en texto</summary>
+        <p>{{ d.descripcionTextual }}</p>
+      </details>
+    </section>
+  }
+
+  @case ('ACORDEON') {
+    <mat-accordion class="accordion" multi>
+      @for (s of d.secciones; track $index) {
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>{{ s.titulo }}</mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="rich" [innerHTML]="s.html"></div>
+        </mat-expansion-panel>
+      }
+    </mat-accordion>
+  }
+
+  @case ('REFERENCIAS') {
+    <section class="references" aria-label="Referencias">
+      <p class="references-title">Referencias</p>
+      <ol>
+        @for (r of d.referencias; track $index) {
+          <li>
+            @if (r.autores) {
+              {{ r.autores }}.
+            }
+            <cite>{{ r.titulo }}</cite>.
+            @if (r.emisor) {
+              {{ r.emisor }}.
+            }
+            @if (r.fecha) {
+              {{ r.fecha }}.
+            }
+            @if (r.doi) {
+              DOI: {{ r.doi }}.
+            }
+            @if (r.url) {
+              <a [href]="r.url" target="_blank" rel="noopener noreferrer">Ver fuente</a>
+            }
+            @if (r.etiquetaEvidencia) {
+              <span class="evidence">{{ r.etiquetaEvidencia }}</span>
+            }
+          </li>
+        }
+      </ol>
+    </section>
+  }
+
+  @case ('ADJUNTO') {
+    @if (medio(); as m) {
+      <a class="attachment" [href]="url(m.id)" target="_blank" rel="noopener noreferrer">
+        <mat-icon aria-hidden="true">picture_as_pdf</mat-icon>
+        <span>
+          <strong>{{ d.titulo }}</strong>
+          @if (d.descripcion) {
+            <span class="attachment-desc">{{ d.descripcion }}</span>
+          }
+          <span class="attachment-desc">Documento PDF complementario · la versión web es la de referencia</span>
+        </span>
+        <mat-icon aria-hidden="true">open_in_new</mat-icon>
+      </a>
+    }
+  }
+}

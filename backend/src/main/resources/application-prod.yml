@@ -1,0 +1,22 @@
+# Ambiente `prod` (Render + Neon prod). Se activa con SPRING_PROFILES_ACTIVE=prod.
+# No definas APP_DEMO_DATA en este ambiente: las cuentas demo tienen contraseñas conocidas.
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true
+
+app:
+  # Nunca cargar cuentas ni artículos demo.
+  demo-data: false
+  registration:
+    # El tier lo asigna una persona autorizada, no quien se registra.
+    allow-tier-selection: false
+
+logging:
+  level:
+    root: INFO
+    # Estas clases escriben la URL JDBC al arrancar; no debe quedar en los logs de la plataforma.
+    org.flywaydb.core.FlywayExecutor: WARN
+    org.hibernate.orm.connections.pooling: WARN
+    org.springframework.security: WARN

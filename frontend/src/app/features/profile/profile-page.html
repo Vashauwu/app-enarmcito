@@ -1,0 +1,91 @@
+<div class="page-container page">
+  <a matButton routerLink="/app" class="back">
+    <mat-icon>arrow_back</mat-icon>
+    Mi aprendizaje
+  </a>
+
+  <h1 class="title">Mi perfil</h1>
+
+  @if (user(); as u) {
+    <div class="layout">
+      <mat-card appearance="outlined" class="card">
+        <mat-card-header>
+          <mat-card-title>Datos personales</mat-card-title>
+          <mat-card-subtitle>Así te saludaremos en la plataforma.</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (errorMessage(); as message) {
+            <p class="form-alert" role="alert">
+              <mat-icon aria-hidden="true">error</mat-icon>
+              {{ message }}
+            </p>
+          }
+          <form class="form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+            <div class="form-row">
+              <mat-form-field>
+                <mat-label>Nombre</mat-label>
+                <input matInput formControlName="nombre" autocomplete="given-name" />
+                @if (form.controls.nombre.hasError('server')) {
+                  <mat-error>{{ form.controls.nombre.getError('server') }}</mat-error>
+                } @else if (form.controls.nombre.hasError('maxlength')) {
+                  <mat-error>Máximo 80 caracteres.</mat-error>
+                } @else if (form.controls.nombre.invalid) {
+                  <mat-error>Escribe tu nombre.</mat-error>
+                }
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Apellido</mat-label>
+                <input matInput formControlName="apellido" autocomplete="family-name" />
+                @if (form.controls.apellido.hasError('server')) {
+                  <mat-error>{{ form.controls.apellido.getError('server') }}</mat-error>
+                } @else if (form.controls.apellido.hasError('maxlength')) {
+                  <mat-error>Máximo 100 caracteres.</mat-error>
+                } @else if (form.controls.apellido.invalid) {
+                  <mat-error>Escribe tu apellido.</mat-error>
+                }
+              </mat-form-field>
+            </div>
+            <div class="actions">
+              <button matButton type="button" (click)="discard()" [disabled]="form.pristine || saving()">
+                Descartar
+              </button>
+              <button matButton="filled" type="submit" [disabled]="form.pristine || saving()">
+                {{ saving() ? 'Guardando…' : 'Guardar cambios' }}
+              </button>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="card">
+        <mat-card-header>
+          <mat-card-title>Cuenta y acceso</mat-card-title>
+          <mat-card-subtitle>Estos datos no se pueden editar desde el perfil.</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <dl class="details">
+            <div>
+              <dt><mat-icon aria-hidden="true">mail</mat-icon>Correo electrónico</dt>
+              <dd>{{ u.correo }}</dd>
+            </div>
+            <div>
+              <dt><mat-icon aria-hidden="true">workspace_premium</mat-icon>Tier vigente</dt>
+              <dd>
+                {{ u.tier.nombre }}
+                @if (u.tier.descripcion) {
+                  <span class="muted">{{ u.tier.descripcion }}</span>
+                }
+              </dd>
+            </div>
+            @if (u.createdAt) {
+              <div>
+                <dt><mat-icon aria-hidden="true">calendar_today</mat-icon>Miembro desde</dt>
+                <dd>{{ u.createdAt | date: 'longDate' }}</dd>
+              </div>
+            }
+          </dl>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>

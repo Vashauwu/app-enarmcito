@@ -1,0 +1,142 @@
+<div class="page-container admin-page">
+  <header class="admin-header">
+    <div>
+      <h1 class="admin-title">Contenido</h1>
+      <p class="admin-subtitle">
+        @if (auth.can('content.update.any')) {
+          Todo el catálogo editorial, incluidos borradores y archivados.
+        } @else if (auth.can('content.review')) {
+          Contenido que tienes asignado para revisión.
+        } @else {
+          Contenido del que eres autor.
+        }
+      </p>
+    </div>
+    @if (auth.can('content.create')) {
+      <a matButton="filled" routerLink="/admin/contenido/nuevo">
+        <mat-icon>add</mat-icon>
+        Crear contenido
+      </a>
+    }
+  </header>
+
+  <form class="admin-filters" [formGroup]="form" role="search" (submit)="$event.preventDefault()">
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Buscar</mat-label>
+      <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+      <input matInput formControlName="q" maxlength="100" placeholder="Título o slug" />
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Estado</mat-label>
+      <mat-select formControlName="estado">
+        <mat-option value="">Todos</mat-option>
+        @for (estado of statusOrder; track estado) {
+          <mat-option [value]="estado">{{ status[estado].label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Área médica</mat-label>
+      <mat-select formControlName="area">
+        <mat-option value="">Todas</mat-option>
+        @for (area of areas.value() ?? []; track area) {
+          <mat-option [value]="area">{{ area }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Tier mínimo</mat-label>
+      <mat-select formControlName="tierId">
+        <mat-option [value]="null">Todos</mat-option>
+        @for (tier of tiers.value() ?? []; track tier.id) {
+          <mat-option [value]="tier.id">{{ tier.nombre }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-checkbox formControlName="revisionVencida" class="checkbox">Sólo revisión vencida</mat-checkbox>
+  </form>
+
+  @if (contents.isLoading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando contenido" />
+  }
+
+  @if (error(); as message) {
+    <app-state-message icon="cloud_off" tone="error" title="No pudimos cargar el contenido" [message]="message">
+      <button matButton="tonal" (click)="contents.reload()">Reintentar</button>
+    </app-state-message>
+  } @else if (contents.hasValue()) {
+    @let result = contents.value();
+    @if (result.items.length === 0) {
+      <app-state-message icon="library_books" title="Sin contenido" message="No hay contenido que coincida con los filtros.">
+        @if (auth.can('content.create')) {
+          <a matButton="tonal" routerLink="/admin/contenido/nuevo">Crear contenido</a>
+        }
+      </app-state-message>
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="result.items" aria-label="Contenido editorial">
+          <ng-container matColumnDef="titulo">
+            <th mat-header-cell *matHeaderCellDef>Título</th>
+            <td mat-cell *matCellDef="let c">
+              <span class="cell-main">
+                <strong>{{ c.titulo }}</strong>
+                <span class="cell-secondary">{{ c.areaMedica ?? 'Sin área' }}</span>
+              </span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="estado">
+            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <td mat-cell *matCellDef="let c"><app-status-badge [status]="statusOf(c)" /></td>
+          </ng-container>
+          <ng-container matColumnDef="tier">
+            <th mat-header-cell *matHeaderCellDef>Acceso</th>
+            <td mat-cell *matCellDef="let c">{{ accesoOf(c) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="responsables">
+            <th mat-header-cell *matHeaderCellDef>Autor / revisor</th>
+            <td mat-cell *matCellDef="let c">
+              <span class="cell-main">
+                <span>{{ c.autor?.nombre ?? 'Sin autor' }}</span>
+                <span class="cell-secondary">{{ c.revisor?.nombre ?? 'Sin revisor' }}</span>
+              </span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="revision">
+            <th mat-header-cell *matHeaderCellDef>Revisión</th>
+            <td mat-cell *matCellDef="let c">
+              @if (c.revisionVencida) {
+                <span class="expired"><mat-icon aria-hidden="true">event_busy</mat-icon>Vencida</span>
+              } @else {
+                {{ c.fechaRevision ? (c.fechaRevision | date: 'd MMM y') : '—' }}
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actualizado">
+            <th mat-header-cell *matHeaderCellDef>Actualizado</th>
+            <td mat-cell *matCellDef="let c">{{ c.updatedAt | date: 'd MMM, HH:mm' }}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="columns()"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: columns()"
+            class="clickable"
+            tabindex="0"
+            role="link"
+            [attr.aria-label]="'Abrir ' + row.titulo"
+            (click)="open(row)"
+            (keydown.enter)="open(row)"
+          ></tr>
+        </table>
+      </div>
+      <mat-paginator
+        [length]="result.totalItems"
+        [pageIndex]="result.page"
+        [pageSize]="pageSize"
+        [hidePageSize]="true"
+        (page)="changePage($event)"
+        aria-label="Páginas de contenido"
+      />
+    }
+  }
+</div>

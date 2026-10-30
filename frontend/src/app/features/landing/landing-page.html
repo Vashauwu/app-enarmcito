@@ -1,0 +1,130 @@
+<header class="site-header">
+  <div class="page-container header-inner">
+    <a class="brand" routerLink="/" [attr.aria-label]="appName + ', inicio'">
+      <span class="brand-mark" aria-hidden="true"><mat-icon>stethoscope</mat-icon></span>
+      {{ appName }}
+    </a>
+    <nav class="header-actions" aria-label="Cuenta">
+      <app-theme-toggle />
+      @if (auth.isAuthenticated()) {
+        <a matButton="filled" routerLink="/app">Ir a mi panel</a>
+      } @else {
+        <a matButton routerLink="/login">Iniciar sesión</a>
+        <a matButton="filled" routerLink="/registro" class="hide-xs">Crear cuenta</a>
+      }
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="page-container hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">Lectura guiada para estudiar medicina</p>
+        <h1 class="hero-title">Repasa medicina con resúmenes claros y fuentes que puedes verificar</h1>
+        <p class="hero-lead">
+          Artículos breves organizados en objetivo, resumen, puntos clave y aplicación clínica. Cada uno
+          cita su fuente y muestra cuándo fue revisado por última vez.
+        </p>
+        <div class="hero-actions">
+          @if (auth.isAuthenticated()) {
+            <a matButton="filled" routerLink="/app" class="cta">
+              <mat-icon>auto_stories</mat-icon>
+              Continuar aprendiendo
+            </a>
+          } @else {
+            <a matButton="filled" routerLink="/registro" class="cta">
+              <mat-icon>person_add</mat-icon>
+              Crear cuenta
+            </a>
+            <a matButton="outlined" routerLink="/login" class="cta">Iniciar sesión</a>
+          }
+        </div>
+      </div>
+
+      <!-- Vista previa ilustrativa del formato de lectura guiada -->
+      <div class="hero-preview" aria-hidden="true">
+        <mat-card appearance="outlined" class="preview-card">
+          <div class="preview-top">
+            <span class="preview-area">Urgencias</span>
+            <span class="preview-time"><mat-icon>schedule</mat-icon>5 min</span>
+          </div>
+          <h2 class="preview-title">Sepsis-3: definiciones de sepsis y choque séptico</h2>
+          <ol class="preview-steps">
+            <li class="done"><mat-icon>check_circle</mat-icon> Objetivo de aprendizaje</li>
+            <li class="done"><mat-icon>check_circle</mat-icon> Resumen</li>
+            <li class="current"><mat-icon>radio_button_checked</mat-icon> Puntos clave</li>
+            <li><mat-icon>radio_button_unchecked</mat-icon> Aplicación clínica</li>
+            <li><mat-icon>radio_button_unchecked</mat-icon> Fuente y revisión</li>
+          </ol>
+          <div class="preview-source">
+            <mat-icon>menu_book</mat-icon>
+            <span>JAMA. 2016 · DOI 10.1001/jama.2016.0287</span>
+          </div>
+        </mat-card>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="method-title">
+    <div class="page-container">
+      <h2 id="method-title" class="section-title">Un solo método: lectura guiada</h2>
+      <p class="section-lead">
+        Todos los artículos siguen la misma estructura, así sabes siempre dónde encontrar lo importante.
+      </p>
+      <ol class="steps">
+        @for (step of steps; track step.title; let i = $index) {
+          <li class="step">
+            <span class="step-icon" aria-hidden="true"><mat-icon>{{ step.icon }}</mat-icon></span>
+            <h3 class="step-title"><span class="step-number">{{ i + 1 }}.</span> {{ step.title }}</h3>
+            <p class="step-text">{{ step.text }}</p>
+          </li>
+        }
+      </ol>
+    </div>
+  </section>
+
+  @if (tiers.hasValue() && tiers.value().length > 0) {
+    <section class="section section--tinted" aria-labelledby="tiers-title">
+      <div class="page-container">
+        <h2 id="tiers-title" class="section-title">Niveles de acceso</h2>
+        <p class="section-lead">Cada nivel incluye el contenido de los anteriores.</p>
+        <ul class="tiers">
+          @for (tier of tiers.value(); track tier.id; let last = $last) {
+            <li>
+              <mat-card appearance="outlined" class="tier-card" [class.tier-card--top]="last">
+                <mat-card-header>
+                  <mat-icon mat-card-avatar class="tier-avatar">workspace_premium</mat-icon>
+                  <mat-card-title>{{ tier.nombre }}</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                  <p>{{ tier.descripcion }}</p>
+                </mat-card-content>
+              </mat-card>
+            </li>
+          }
+        </ul>
+      </div>
+    </section>
+  }
+
+  <section class="section" aria-labelledby="cta-title">
+    <div class="page-container closing">
+      <h2 id="cta-title" class="section-title">Empieza con tu primer artículo</h2>
+      <app-medical-disclaimer class="closing-disclaimer" />
+      @if (!auth.isAuthenticated()) {
+        <div class="hero-actions">
+          <a matButton="filled" routerLink="/registro" class="cta">Crear cuenta</a>
+          <a matButton routerLink="/login" class="cta">Ya tengo cuenta</a>
+        </div>
+      }
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="page-container footer-inner">
+    <span>© {{ year }} {{ appName }}</span>
+    <span>Contenido educativo · No sustituye el juicio clínico profesional</span>
+  </div>
+</footer>

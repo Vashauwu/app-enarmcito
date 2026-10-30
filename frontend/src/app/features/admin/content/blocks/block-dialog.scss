@@ -1,0 +1,133 @@
+.content {
+  display: grid;
+  gap: 12px;
+  min-width: min(720px, calc(100vw - 80px));
+  padding-top: 16px !important;
+}
+
+h2 mat-icon {
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 599px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.toolbar {
+  display: flex;
+  gap: 4px;
+}
+
+.sub {
+  margin: 12px 0 0;
+  font: var(--mat-sys-title-small);
+}
+
+.hint {
+  margin: 0 0 8px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+.paste {
+  border: 1px dashed var(--mat-sys-outline);
+  border-radius: 12px;
+  padding: 8px 12px;
+
+  textarea {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.grid-edit {
+  border-collapse: collapse;
+  width: 100%;
+
+  th,
+  td {
+    padding: 2px;
+    vertical-align: top;
+    min-width: 140px;
+  }
+
+  th.tools,
+  td.tools {
+    min-width: 0;
+    width: 48px;
+  }
+
+  input,
+  textarea {
+    width: 100%;
+    font: inherit;
+    padding: 6px 8px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 8px;
+    background: var(--mat-sys-surface);
+    color: var(--mat-sys-on-surface);
+    resize: vertical;
+  }
+
+  th input {
+    font-weight: 600;
+  }
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.node {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+
+  .grow {
+    flex: 1 1 200px;
+  }
+}
+
+.node-id {
+  font: var(--mat-sys-label-large);
+  min-width: 32px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--mat-sys-surface-container-high);
+}
+
+.panel {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  justify-items: start;
+
+  mat-form-field,
+  .two {
+    width: 100%;
+  }
+}
+
+.error {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  color: var(--mat-sys-error);
+}

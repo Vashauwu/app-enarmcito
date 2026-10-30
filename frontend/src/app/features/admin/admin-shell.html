@@ -1,0 +1,69 @@
+<a class="skip-link" href="#contenido-admin">Saltar al contenido</a>
+
+<mat-sidenav-container class="container">
+  <mat-sidenav
+    class="sidenav"
+    [mode]="compact() ? 'over' : 'side'"
+    [opened]="!compact()"
+    [fixedInViewport]="compact()"
+    aria-label="Navegación del panel"
+  >
+    <div class="sidenav-header">
+      <a class="brand" routerLink="/admin" (click)="closeOnMobile()">
+        <span class="brand-mark" aria-hidden="true"><mat-icon>admin_panel_settings</mat-icon></span>
+        <span>
+          <span class="brand-name">{{ appName }}</span>
+          <span class="brand-caption">Panel administrativo</span>
+        </span>
+      </a>
+    </div>
+
+    <mat-nav-list>
+      @for (item of nav(); track item.path) {
+        <a
+          mat-list-item
+          [routerLink]="item.path"
+          routerLinkActive
+          #active="routerLinkActive"
+          [routerLinkActiveOptions]="{ exact: !!item.exact }"
+          [activated]="active.isActive"
+          [attr.aria-current]="active.isActive ? 'page' : null"
+          (click)="closeOnMobile()"
+        >
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+
+    <div class="sidenav-footer">
+      <a matButton routerLink="/app">
+        <mat-icon>auto_stories</mat-icon>
+        Zona de aprendizaje
+      </a>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="content">
+    <mat-toolbar class="toolbar">
+      @if (compact()) {
+        <button matIconButton type="button" (click)="sidenav()?.toggle()" aria-label="Abrir navegación">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <span class="toolbar-spacer"></span>
+      <span class="who">
+        <span class="who-name">{{ user()?.nombre }} {{ user()?.apellido }}</span>
+        <span class="who-role">{{ user()?.rolNombre }}</span>
+      </span>
+      <app-theme-toggle />
+      <button matIconButton type="button" (click)="logout()" aria-label="Cerrar sesión">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <main id="contenido-admin" class="main" tabindex="-1">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

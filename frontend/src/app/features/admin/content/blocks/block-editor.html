@@ -1,0 +1,59 @@
+<mat-card appearance="outlined" class="admin-card">
+  <mat-card-header>
+    <mat-card-title>Contenido por bloques</mat-card-title>
+    <mat-card-subtitle>Texto, tablas, llamadas, algoritmos, imágenes y referencias, en el orden en que se leen.</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    @if (blocks().length === 0) {
+      <p class="empty">Todavía no hay bloques. Agrega el primero para empezar a armar la página.</p>
+    } @else {
+      <ol class="list" [attr.aria-busy]="busy()">
+        @for (block of blocks(); track block.id; let i = $index; let first = $first; let last = $last) {
+          <li class="item" [attr.data-tipo]="block.tipo">
+            <span class="icon" aria-hidden="true"><mat-icon>{{ label[block.tipo].icon }}</mat-icon></span>
+            <div class="body">
+              <span class="kind">
+                {{ i + 1 }} · {{ label[block.tipo].label }}
+                @if (pending(block)) {
+                  <span class="pending" title="El archivo aún no está aprobado y no se mostrará al público">
+                    <mat-icon aria-hidden="true">hourglass_top</mat-icon>archivo pendiente
+                  </span>
+                }
+              </span>
+              <span class="summary">{{ summary(block) }}</span>
+            </div>
+            <div class="tools">
+              @if (detail().acciones.reordenarBloques) {
+                <button matIconButton type="button" [disabled]="first || busy()" aria-label="Subir bloque" (click)="move(block, -1)">
+                  <mat-icon>arrow_upward</mat-icon>
+                </button>
+                <button matIconButton type="button" [disabled]="last || busy()" aria-label="Bajar bloque" (click)="move(block, 1)">
+                  <mat-icon>arrow_downward</mat-icon>
+                </button>
+              }
+              @if (block.editable) {
+                <button matIconButton type="button" [disabled]="busy()" aria-label="Editar bloque" (click)="edit(block)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button matIconButton type="button" [disabled]="busy()" aria-label="Retirar bloque" (click)="remove(block)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ol>
+    }
+
+    @if (detail().acciones.agregarBloques) {
+      <div class="palette" role="group" aria-label="Agregar bloque">
+        @for (t of types(); track t.tipo) {
+          <button type="button" class="chip" [disabled]="busy()" (click)="add(t.tipo)" [title]="t.description">
+            <mat-icon aria-hidden="true">{{ t.icon }}</mat-icon>
+            {{ t.label }}
+          </button>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

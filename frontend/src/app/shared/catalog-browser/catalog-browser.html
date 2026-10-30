@@ -1,0 +1,67 @@
+<section class="block" aria-labelledby="catalog-title">
+  <header class="block-header">
+    @if (searching()) {
+      <h1 id="catalog-title" class="block-title block-title--search">Resultados para “{{ query() }}”</h1>
+      <a matButton [routerLink]="clearPath()">
+        <mat-icon>close</mat-icon>
+        Limpiar búsqueda
+      </a>
+    } @else {
+      <h2 id="catalog-title" class="block-title">{{ titulo() }}</h2>
+    }
+  </header>
+
+  <mat-chip-listbox class="filters" aria-label="Filtrar por tipo de contenido" [value]="tipo()">
+    <mat-chip-option [value]="null" [selected]="!tipo()" (selectionChange)="$event.selected && selectTipo(null)">
+      Todo
+    </mat-chip-option>
+    @for (t of tipos; track t.codigo) {
+      <mat-chip-option [value]="t.codigo" [selected]="tipo() === t.codigo" (selectionChange)="$event.selected && selectTipo(t.codigo)">
+        <mat-icon matChipAvatar aria-hidden="true">{{ t.icon }}</mat-icon>
+        {{ t.label }}
+      </mat-chip-option>
+    }
+  </mat-chip-listbox>
+
+  @if (catalog.isLoading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando contenido" />
+  }
+
+  @if (error(); as message) {
+    <app-state-message icon="cloud_off" tone="error" title="No pudimos cargar la biblioteca" [message]="message">
+      <button matButton="tonal" (click)="catalog.reload()">Reintentar</button>
+    </app-state-message>
+  } @else if (catalog.hasValue()) {
+    @let result = catalog.value();
+    @if (result.items.length === 0) {
+      <app-state-message
+        icon="search_off"
+        [title]="searching() ? 'Sin resultados' : 'Todavía no hay contenido aquí'"
+        [message]="
+          searching()
+            ? 'No encontramos contenido disponible para ti con ese título o área médica. Prueba con otra palabra.'
+            : 'Pronto publicaremos contenido de este tipo.'
+        "
+      />
+    } @else {
+      <p class="result-count" aria-live="polite">
+        {{ result.totalItems }} {{ result.totalItems === 1 ? 'resultado' : 'resultados' }}
+      </p>
+      <ul class="grid">
+        @for (item of result.items; track item.id) {
+          <li><app-content-card [content]="item" [basePath]="basePath()" /></li>
+        }
+      </ul>
+      @if (result.totalPages > 1) {
+        <mat-paginator
+          [length]="result.totalItems"
+          [pageIndex]="result.page"
+          [pageSize]="pageSize"
+          [hidePageSize]="true"
+          (page)="changePage($event)"
+          aria-label="Páginas de la biblioteca"
+        />
+      }
+    }
+  }
+</section>

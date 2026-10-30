@@ -1,0 +1,139 @@
+<div class="page-container admin-page">
+  <header class="admin-header">
+    <div>
+      <h1 class="admin-title">Bitácora de auditoría</h1>
+      <p class="admin-subtitle">
+        Registro de sólo lectura.
+        @if (!auth.can('audit.read')) {
+          @if (auth.can('audit.read.editorial')) {
+            Ves los eventos editoriales y los tuyos.
+          } @else {
+            Ves tus acciones y las del contenido que te corresponde.
+          }
+        }
+      </p>
+    </div>
+  </header>
+
+  <form class="admin-filters" [formGroup]="form" role="search" (submit)="$event.preventDefault()">
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Acción</mat-label>
+      <mat-select formControlName="accion">
+        <mat-option value="">Todas</mat-option>
+        @for (a of actions.value() ?? []; track a.codigo) {
+          <mat-option [value]="a.codigo">{{ a.descripcion }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Recurso</mat-label>
+      <mat-select formControlName="recursoTipo">
+        <mat-option value="">Todos</mat-option>
+        <mat-option value="USUARIO">Usuarios</mat-option>
+        <mat-option value="CONTENIDO">Contenido</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Correo de quien actuó</mat-label>
+      <input matInput formControlName="actor" maxlength="254" />
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Periodo</mat-label>
+      <mat-date-range-input [rangePicker]="range">
+        <input matStartDate formControlName="desde" placeholder="Desde" />
+        <input matEndDate formControlName="hasta" placeholder="Hasta" />
+      </mat-date-range-input>
+      <mat-datepicker-toggle matIconSuffix [for]="range" />
+      <mat-date-range-picker #range />
+    </mat-form-field>
+    @if (form.controls.recursoId.value) {
+      <mat-form-field subscriptSizing="dynamic">
+        <mat-label>Id del recurso</mat-label>
+        <input matInput formControlName="recursoId" maxlength="64" />
+      </mat-form-field>
+    }
+    <button matButton type="button" (click)="clear()" class="clear">
+      <mat-icon>filter_alt_off</mat-icon>
+      Limpiar filtros
+    </button>
+  </form>
+
+  @if (events.isLoading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando bitácora" />
+  }
+
+  @if (events.error()) {
+    <app-state-message icon="cloud_off" tone="error" title="No pudimos cargar la bitácora">
+      <button matButton="tonal" (click)="events.reload()">Reintentar</button>
+    </app-state-message>
+  } @else if (events.hasValue()) {
+    @let result = events.value();
+    @if (result.items.length === 0) {
+      <app-state-message icon="history" title="Sin eventos" message="No hay eventos que coincidan con los filtros." />
+    } @else {
+      <mat-accordion class="events" multi>
+        @for (e of result.items; track e.id) {
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title class="event-title">
+                <span class="event-when">{{ e.ocurridoAt | date: 'd MMM y, HH:mm' }}</span>
+                <span class="event-what">{{ e.accionDescripcion }}</span>
+              </mat-panel-title>
+              <mat-panel-description class="event-who">{{ e.actor?.correo ?? 'Sistema' }}</mat-panel-description>
+            </mat-expansion-panel-header>
+
+            <dl class="event-detail">
+              <div><dt>Resumen</dt><dd>{{ e.resumen }}</dd></div>
+              <div><dt>Quién</dt><dd>{{ e.actor?.correo ?? 'Sistema' }} · {{ roleLabel(e.actor?.rol) }}</dd></div>
+              @if (e.motivo) {
+                <div><dt>Motivo</dt><dd>{{ e.motivo }}</dd></div>
+              }
+              @if (e.recursoId) {
+                <div>
+                  <dt>Recurso</dt>
+                  <dd>
+                    @if (resourceLink(e.recursoTipo, e.recursoId); as link) {
+                      <a [routerLink]="link">{{ e.recursoTipo }} · abrir</a>
+                    } @else {
+                      {{ e.recursoTipo }} · {{ e.recursoId }}
+                    }
+                  </dd>
+                </div>
+              }
+            </dl>
+
+            @if (e.cambios) {
+              <table class="changes">
+                <caption>Cambios</caption>
+                <thead>
+                  <tr><th scope="col">Campo</th><th scope="col">Antes</th><th scope="col">Después</th></tr>
+                </thead>
+                <tbody>
+                  @for (c of e.cambios | keyvalue; track c.key) {
+                    <tr>
+                      <th scope="row">{{ c.key }}</th>
+                      @if (c.value.modificado) {
+                        <td colspan="2">Texto modificado ({{ c.value.longitud }} caracteres)</td>
+                      } @else {
+                        <td>{{ show(c.value.antes) }}</td>
+                        <td>{{ show(c.value.despues) }}</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </mat-expansion-panel>
+        }
+      </mat-accordion>
+      <mat-paginator
+        [length]="result.totalItems"
+        [pageIndex]="result.page"
+        [pageSize]="pageSize"
+        [hidePageSize]="true"
+        (page)="changePage($event)"
+        aria-label="Páginas de la bitácora"
+      />
+    }
+  }
+</div>

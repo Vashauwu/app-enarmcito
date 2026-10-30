@@ -1,0 +1,34 @@
+<mat-card appearance="outlined" class="card" [attr.data-tipo]="content().tipo">
+  <mat-card-header>
+    <mat-card-subtitle class="kind">
+      <span class="type">
+        <mat-icon aria-hidden="true">{{ tipo().icon }}</mat-icon>
+        {{ tipo().corto }}
+      </span>
+      @if (content().areaMedica) {
+        <span class="area">{{ content().areaMedica }}</span>
+      }
+    </mat-card-subtitle>
+    <mat-card-title class="title">
+      <a class="title-link" [routerLink]="[basePath(), content().slug]">{{ content().titulo }}</a>
+    </mat-card-title>
+  </mat-card-header>
+  <mat-card-content class="excerpt">
+    @if (content().requiereActualizacion) {
+      <p class="outdated"><mat-icon aria-hidden="true">update</mat-icon>Requiere actualización</p>
+    }
+    <p>{{ content().extracto }}</p>
+  </mat-card-content>
+  <div class="meta">
+    @if (content().tiempoLecturaMinutos) {
+      <span class="meta-item">
+        <mat-icon aria-hidden="true">schedule</mat-icon>
+        {{ content().tiempoLecturaMinutos }} min de lectura
+      </span>
+    }
+    <span class="access" [attr.data-politica]="content().acceso.politica">
+      <mat-icon aria-hidden="true">{{ acceso().icon }}</mat-icon>
+      {{ acceso().label }}
+    </span>
+  </div>
+</mat-card>

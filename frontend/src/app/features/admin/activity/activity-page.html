@@ -1,0 +1,111 @@
+<div class="page-container admin-page">
+  <header class="admin-header">
+    <div>
+      <h1 class="admin-title">Usuarios activos</h1>
+      <p class="admin-subtitle">
+        Un usuario está activo si inició sesión dentro del periodo elegido. No es presencia en tiempo real.
+      </p>
+    </div>
+    <mat-button-toggle-group
+      [value]="days()"
+      (change)="setDays($event.value)"
+      aria-label="Periodo"
+      hideSingleSelectionIndicator
+    >
+      <mat-button-toggle [value]="7">7 días</mat-button-toggle>
+      <mat-button-toggle [value]="30">30 días</mat-button-toggle>
+      <mat-button-toggle [value]="90">90 días</mat-button-toggle>
+    </mat-button-toggle-group>
+  </header>
+
+  @if (activity.isLoading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando actividad" />
+  }
+
+  @if (activity.error()) {
+    <app-state-message icon="cloud_off" tone="error" title="No pudimos cargar la actividad">
+      <button matButton="tonal" (click)="activity.reload()">Reintentar</button>
+    </app-state-message>
+  } @else if (activity.hasValue()) {
+    @let a = activity.value();
+    <div class="metric-grid">
+      <div class="metric">
+        <span class="metric-label"><mat-icon aria-hidden="true">how_to_reg</mat-icon>Activos en {{ a.periodoDias }} días</span>
+        <span class="metric-value">{{ a.totalActivos }}</span>
+      </div>
+    </div>
+
+    <div class="breakdowns">
+      @if (byRole().length) {
+        <section aria-labelledby="by-role">
+          <h2 id="by-role" class="section-title">Activos por rol</h2>
+          <ul class="bars">
+            @for (bar of byRole(); track bar.label) {
+              <li>
+                <span class="bar-label">{{ bar.label }}</span>
+                <span class="bar-track" aria-hidden="true"><span class="bar-fill" [style.width.%]="bar.percent"></span></span>
+                <span class="bar-value">{{ bar.value }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+      <section aria-labelledby="by-tier">
+        <h2 id="by-tier" class="section-title">Activos por tier</h2>
+        <ul class="bars">
+          @for (bar of byTier(); track bar.label) {
+            <li>
+              <span class="bar-label">{{ bar.label }}</span>
+              <span class="bar-track" aria-hidden="true"><span class="bar-fill" [style.width.%]="bar.percent"></span></span>
+              <span class="bar-value">{{ bar.value }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+      <section aria-labelledby="by-status">
+        <h2 id="by-status" class="section-title">Cuentas por estado</h2>
+        <ul class="bars">
+          @for (bar of byStatus(); track bar.label) {
+            <li>
+              <span class="bar-label">{{ bar.label }}</span>
+              <span class="bar-track" aria-hidden="true"><span class="bar-fill" [style.width.%]="bar.percent"></span></span>
+              <span class="bar-value">{{ bar.value }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    </div>
+
+    <h2 class="section-title">Últimos accesos</h2>
+    @if (a.usuarios.items.length === 0) {
+      <app-state-message icon="person_off" title="Sin usuarios activos en este periodo" />
+    } @else {
+      <ul class="people">
+        @for (u of a.usuarios.items; track u.id) {
+          <li>
+            <button type="button" class="person" (click)="open(u)">
+              <span class="person-main">
+                <strong>{{ u.nombre }} {{ u.apellido }}</strong>
+                <span class="muted">{{ u.correo }} · {{ u.tier.nombre }}</span>
+              </span>
+              <span class="person-side">
+                <app-status-badge [status]="accountStatus[u.estado]" />
+                <span class="muted">{{ u.lastLoginAt | date: 'd MMM, HH:mm' }}</span>
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+      @if (a.usuarios.totalPages > 1) {
+        <mat-paginator
+          [length]="a.usuarios.totalItems"
+          [pageIndex]="a.usuarios.page"
+          [pageSize]="pageSize"
+          [hidePageSize]="true"
+          (page)="changePage($event)"
+          aria-label="Páginas de usuarios activos"
+        />
+      }
+    }
+  }
+</div>

@@ -1,0 +1,87 @@
+<main class="auth-page">
+  <mat-card appearance="outlined" class="auth-card">
+    <mat-card-content>
+      <a class="auth-brand" routerLink="/">
+        <mat-icon aria-hidden="true">stethoscope</mat-icon>
+        {{ appName }}
+      </a>
+
+      @switch (state()) {
+        @case ('loading') {
+          <h1 class="auth-title">Verificando enlace…</h1>
+          <mat-progress-bar mode="indeterminate" aria-label="Verificando enlace" />
+        }
+        @case ('invalid') {
+          <h1 class="auth-title">Enlace no válido</h1>
+          <p class="auth-subtitle">
+            {{ errorMessage() ?? 'El enlace está incompleto. Ábrelo tal como lo recibiste o pide uno nuevo.' }}
+          </p>
+          <a matButton="filled" routerLink="/login" class="form-submit">Ir a iniciar sesión</a>
+        }
+        @case ('done') {
+          <h1 class="auth-title">Contraseña guardada</h1>
+          <p class="auth-subtitle">Ya puedes iniciar sesión con tu correo y la contraseña que elegiste.</p>
+          <a matButton="filled" routerLink="/login" class="form-submit">Iniciar sesión</a>
+        }
+        @case ('ready') {
+          @let i = info()!;
+          <h1 class="auth-title">{{ i.tipo === 'INVITACION' ? 'Activa tu cuenta' : 'Define una contraseña nueva' }}</h1>
+          <p class="auth-subtitle">Hola, {{ i.nombre }}. Cuenta: <strong>{{ i.correo }}</strong></p>
+
+          @if (errorMessage(); as message) {
+            <p class="form-alert" role="alert"><mat-icon aria-hidden="true">error</mat-icon>{{ message }}</p>
+          }
+
+          <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+            <!-- Ayuda a los gestores de contraseñas a asociarla con la cuenta correcta -->
+            <input type="email" name="username" autocomplete="username" [value]="i.correo" hidden />
+            <mat-form-field>
+              <mat-label>Contraseña</mat-label>
+              <input
+                matInput
+                [type]="hidePassword() ? 'password' : 'text'"
+                formControlName="password"
+                autocomplete="new-password"
+              />
+              <button
+                matIconButton
+                matSuffix
+                type="button"
+                (click)="hidePassword.set(!hidePassword())"
+                [attr.aria-label]="hidePassword() ? 'Mostrar contraseñas' : 'Ocultar contraseñas'"
+                [attr.aria-pressed]="!hidePassword()"
+              >
+                <mat-icon>{{ hidePassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
+              </button>
+              <mat-hint>Al menos {{ minLength }} caracteres.</mat-hint>
+              @if (form.controls.password.hasError('minlength')) {
+                <mat-error>Usa al menos {{ minLength }} caracteres.</mat-error>
+              } @else if (form.controls.password.hasError('maxlength')) {
+                <mat-error>La contraseña es demasiado larga.</mat-error>
+              } @else {
+                <mat-error>Escribe una contraseña.</mat-error>
+              }
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Confirmar contraseña</mat-label>
+              <input
+                matInput
+                [type]="hidePassword() ? 'password' : 'text'"
+                formControlName="confirmPassword"
+                autocomplete="new-password"
+              />
+              @if (form.controls.confirmPassword.hasError('passwordMismatch')) {
+                <mat-error>Las contraseñas no coinciden.</mat-error>
+              } @else {
+                <mat-error>Confirma tu contraseña.</mat-error>
+              }
+            </mat-form-field>
+            <button matButton="filled" type="submit" class="form-submit" [disabled]="submitting()">
+              {{ submitting() ? 'Guardando…' : 'Guardar contraseña' }}
+            </button>
+          </form>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+</main>

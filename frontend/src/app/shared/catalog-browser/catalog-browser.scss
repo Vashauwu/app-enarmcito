@@ -1,0 +1,54 @@
+.block {
+  margin-bottom: 40px;
+}
+
+.block-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.block-title {
+  margin: 0;
+  font: var(--mat-sys-title-large);
+  font-family: var(--app-brand-font);
+  font-weight: 700;
+
+  &--search {
+    font: var(--mat-sys-headline-small);
+    font-family: var(--app-brand-font);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+}
+
+.filters {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.result-count {
+  margin: 0 0 12px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+}
+
+.grid {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+}
+
+mat-paginator {
+  background: transparent;
+}
+
+mat-progress-bar {
+  margin-bottom: 16px;
+}

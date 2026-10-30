@@ -1,0 +1,553 @@
+<div class="page-container admin-page">
+  <a matButton routerLink="/admin/contenido" class="back">
+    <mat-icon>arrow_back</mat-icon>
+    Contenido
+  </a>
+
+  @if (resource.isLoading() && !detail()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando contenido" />
+  } @else if (loadError(); as error) {
+    <app-state-message
+      [icon]="error.status === 404 ? 'search_off' : 'cloud_off'"
+      [tone]="error.status === 404 ? 'neutral' : 'error'"
+      [title]="error.status === 404 ? 'Contenido no disponible' : 'No pudimos cargar el contenido'"
+      [message]="error.message"
+    >
+      <a matButton="tonal" routerLink="/admin/contenido">Volver al listado</a>
+    </app-state-message>
+  } @else {
+    <header class="admin-header">
+      <div>
+        <h1 class="admin-title">{{ creating() ? 'Nuevo contenido' : detail()?.titulo }}</h1>
+        <p class="admin-subtitle">
+          @if (creating()) {
+            Se guardará como borrador. Puedes dejar campos vacíos y completarlos después.
+          } @else if (!canEdit()) {
+            Sólo lectura en el estado actual o para tu rol.
+          } @else {
+            Lectura guiada · los campos marcados son obligatorios para enviar a revisión.
+          }
+        </p>
+      </div>
+      @if (detail(); as d) {
+        <app-status-badge [status]="status[d.estado]" />
+      }
+    </header>
+
+    @if (busy()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Aplicando cambio" />
+    }
+
+    <div class="layout">
+      <!-- Formulario editorial -->
+      <form class="editor" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        @if (errorMessage(); as message) {
+          <p class="form-alert" role="alert"><mat-icon aria-hidden="true">error</mat-icon>{{ message }}</p>
+        }
+
+        <mat-card appearance="outlined" class="admin-card">
+          <mat-card-header>
+            <mat-card-title>Tipo de contenido</mat-card-title>
+            @if (!creating()) {
+              <mat-card-subtitle>El tipo se define al crear y cambia el flujo de aprobación.</mat-card-subtitle>
+            }
+          </mat-card-header>
+          <mat-card-content>
+            <div class="type-grid" role="radiogroup" aria-label="Tipo de contenido">
+              @for (t of creating() ? tipoOpciones : [tipo()]; track t) {
+                <button
+                  type="button"
+                  class="type-card"
+                  role="radio"
+                  [attr.aria-checked]="tipo() === t"
+                  [class.on]="tipo() === t"
+                  [disabled]="!creating()"
+                  (click)="tipoNuevo.set(t)"
+                >
+                  <mat-icon aria-hidden="true">{{ tipos[t].icon }}</mat-icon>
+                  <strong>{{ tipos[t].label }}</strong>
+                  <span>
+                    @switch (t) {
+                      @case ('ARTICULO') { Lectura breve y gratuita para todo público. }
+                      @case ('GUIA_PRACTICA_CLINICA') { Recurso clínico con fuente oficial, vigencia, recomendaciones y revisión clínica. }
+                      @case ('RECURSO_ESTUDIO') { Apuntes, resúmenes y fichas; no se presenta como guía clínica. }
+                    }
+                  </span>
+                </button>
+              }
+            </div>
+            @if (creating() && tipoOpciones.length === 0) {
+              <p class="field-error" role="alert">Tu rol no puede crear contenido.</p>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card appearance="outlined" class="admin-card">
+          <mat-card-header><mat-card-title>Identificación</mat-card-title></mat-card-header>
+          <mat-card-content class="fields">
+            <mat-form-field class="span-2">
+              <mat-label>Título</mat-label>
+              <input matInput formControlName="titulo" maxlength="200" />
+              <mat-error>{{ form.controls.titulo.getError('server') ?? 'Escribe el título.' }}</mat-error>
+            </mat-form-field>
+            <mat-form-field class="span-2">
+              <mat-label>Slug (URL)</mat-label>
+              <span matTextPrefix>/contenido/</span>
+              <input matInput formControlName="slug" maxlength="220" />
+              <mat-hint>
+                @if (detail()?.estado === 'PUBLICADO') {
+                  La URL de un artículo publicado no cambia.
+                } @else {
+                  Si lo dejas vacío se genera a partir del título.
+                }
+              </mat-hint>
+              <mat-error>
+                {{ form.controls.slug.getError('server') ?? 'Usa minúsculas, números y guiones (p. ej. sepsis-definiciones).' }}
+              </mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Área médica *</mat-label>
+              <input matInput formControlName="areaMedica" maxlength="100" [matAutocomplete]="areaAuto" />
+              <mat-autocomplete #areaAuto="matAutocomplete">
+                @for (area of filteredAreas(); track area) {
+                  <mat-option [value]="area">{{ area }}</mat-option>
+                }
+              </mat-autocomplete>
+              <mat-error>{{ form.controls.areaMedica.getError('server') ?? 'Máximo 100 caracteres.' }}</mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Acceso</mat-label>
+              <input matInput [value]="acceso()" disabled />
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Tiempo de lectura *</mat-label>
+              <input matInput type="number" formControlName="tiempoLecturaMinutos" min="1" max="240" />
+              <span matTextSuffix>min</span>
+              <mat-error>{{ form.controls.tiempoLecturaMinutos.getError('server') ?? 'Entre 1 y 240 minutos.' }}</mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Método de aprendizaje</mat-label>
+              <input matInput value="Lectura guiada" disabled />
+            </mat-form-field>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card appearance="outlined" class="admin-card">
+          <mat-card-header><mat-card-title>{{ tipo() === 'GUIA_PRACTICA_CLINICA' ? 'Resumen ejecutivo' : 'Lectura guiada' }}</mat-card-title></mat-card-header>
+          <mat-card-content class="fields fields--single">
+            <mat-form-field>
+              <mat-label>Objetivo de aprendizaje</mat-label>
+              <textarea matInput formControlName="objetivoAprendizaje" rows="2" maxlength="2000"></textarea>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>{{ tipo() === 'GUIA_PRACTICA_CLINICA' ? 'Resumen ejecutivo *' : 'Resumen *' }}</mat-label>
+              <textarea matInput formControlName="resumen" rows="6" maxlength="10000"></textarea>
+              <mat-hint align="end">{{ form.controls.resumen.value.length }} / 10000</mat-hint>
+              <mat-error>{{ form.controls.resumen.getError('server') ?? 'Máximo 10000 caracteres.' }}</mat-error>
+            </mat-form-field>
+
+            <fieldset class="points" formArrayName="puntosClave">
+              <legend>Puntos clave{{ tipo() === 'ARTICULO' ? ' *' : '' }}</legend>
+              @if (form.controls.puntosClave.getError('server'); as message) {
+                <p class="field-error" role="alert">{{ message }}</p>
+              }
+              @for (point of points.controls; track point; let i = $index) {
+                <div class="point">
+                  <mat-form-field subscriptSizing="dynamic">
+                    <mat-label>Punto {{ i + 1 }}</mat-label>
+                    <textarea matInput [formControlName]="i" rows="1" maxlength="500"></textarea>
+                  </mat-form-field>
+                  @if (canEdit()) {
+                    <button
+                      matIconButton
+                      type="button"
+                      (click)="removePoint(i)"
+                      [attr.aria-label]="'Quitar punto ' + (i + 1)"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  }
+                </div>
+              }
+              @if (canEdit() && points.length < maxKeyPoints) {
+                <button matButton type="button" (click)="addPoint()">
+                  <mat-icon>add</mat-icon>
+                  Agregar punto clave
+                </button>
+              }
+            </fieldset>
+
+            <mat-form-field>
+              <mat-label>Aplicación clínica</mat-label>
+              <textarea matInput formControlName="aplicacionClinica" rows="3" maxlength="4000"></textarea>
+              <mat-hint>Sólo si está sustentada por la fuente.</mat-hint>
+            </mat-form-field>
+          </mat-card-content>
+        </mat-card>
+
+        @if (tipo() === 'GUIA_PRACTICA_CLINICA') {
+          <mat-card appearance="outlined" class="admin-card">
+            <mat-card-header>
+              <mat-card-title>Guía de práctica clínica</mat-card-title>
+              <mat-card-subtitle>La plataforma no es la institución emisora: cita y enlaza siempre la fuente oficial.</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content class="fields">
+              <mat-form-field>
+                <mat-label>Institución emisora *</mat-label>
+                <input matInput formControlName="institucionEmisora" maxlength="200" />
+                <mat-error>{{ form.controls.institucionEmisora.getError('server') ?? 'Máximo 200 caracteres.' }}</mat-error>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Edición o versión *</mat-label>
+                <input matInput formControlName="fuenteEdicion" maxlength="100" />
+                <mat-error>{{ form.controls.fuenteEdicion.getError('server') ?? 'Máximo 100 caracteres.' }}</mat-error>
+              </mat-form-field>
+              <mat-form-field class="span-2">
+                <mat-label>Población objetivo *</mat-label>
+                <textarea matInput formControlName="poblacionObjetivo" rows="2" maxlength="4000"></textarea>
+                <mat-error>{{ form.controls.poblacionObjetivo.getError('server') ?? 'Máximo 4000 caracteres.' }}</mat-error>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Contexto de atención *</mat-label>
+                <textarea matInput formControlName="contextoAtencion" rows="2" maxlength="4000"></textarea>
+                <mat-error>{{ form.controls.contextoAtencion.getError('server') ?? 'Máximo 4000 caracteres.' }}</mat-error>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Alcance clínico *</mat-label>
+                <textarea matInput formControlName="alcanceClinico" rows="2" maxlength="4000"></textarea>
+                <mat-error>{{ form.controls.alcanceClinico.getError('server') ?? 'Máximo 4000 caracteres.' }}</mat-error>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Vigente hasta *</mat-label>
+                <input matInput [matDatepicker]="vigPicker" formControlName="vigenteHasta" />
+                <mat-datepicker-toggle matIconSuffix [for]="vigPicker" />
+                <mat-datepicker #vigPicker />
+                <mat-error>{{ form.controls.vigenteHasta.getError('server') ?? 'Fecha no válida.' }}</mat-error>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Próxima revisión *</mat-label>
+                <input matInput [matDatepicker]="proxPicker" formControlName="proximaRevision" />
+                <mat-datepicker-toggle matIconSuffix [for]="proxPicker" />
+                <mat-datepicker #proxPicker />
+                <mat-error>{{ form.controls.proximaRevision.getError('server') ?? 'Fecha no válida.' }}</mat-error>
+              </mat-form-field>
+
+              <fieldset class="points span-2" formArrayName="recomendaciones">
+                <legend>Recomendaciones *</legend>
+                @if (form.controls.recomendaciones.getError('server'); as message) {
+                  <p class="field-error" role="alert">{{ message }}</p>
+                }
+                @for (rec of recomendaciones.controls; track rec; let i = $index) {
+                  <div class="recommendation" [formGroupName]="i">
+                    <mat-form-field subscriptSizing="dynamic" class="span-all">
+                      <mat-label>Recomendación {{ i + 1 }}</mat-label>
+                      <textarea matInput formControlName="texto" rows="2" maxlength="1500"></textarea>
+                    </mat-form-field>
+                    <mat-form-field subscriptSizing="dynamic">
+                      <mat-label>Fuerza</mat-label>
+                      <input matInput formControlName="fuerza" maxlength="100" />
+                    </mat-form-field>
+                    <mat-form-field subscriptSizing="dynamic">
+                      <mat-label>Nivel de evidencia</mat-label>
+                      <input matInput formControlName="nivelEvidencia" maxlength="100" />
+                    </mat-form-field>
+                    <mat-form-field subscriptSizing="dynamic">
+                      <mat-label>Referencia</mat-label>
+                      <input matInput formControlName="referencia" maxlength="500" />
+                    </mat-form-field>
+                    @if (canEdit()) {
+                      <button matButton type="button" (click)="removeRecommendation(i)">
+                        <mat-icon>delete</mat-icon>Quitar
+                      </button>
+                    }
+                  </div>
+                }
+                @if (canEdit() && recomendaciones.length < maxRecommendations) {
+                  <button matButton type="button" (click)="addRecommendation()">
+                    <mat-icon>add</mat-icon>Agregar recomendación
+                  </button>
+                }
+              </fieldset>
+            </mat-card-content>
+          </mat-card>
+        }
+
+        @if (tipo() === 'RECURSO_ESTUDIO') {
+          <mat-card appearance="outlined" class="admin-card">
+            <mat-card-header>
+              <mat-card-title>Procedencia y derechos</mat-card-title>
+              <mat-card-subtitle>Material de estudio; no es guía de práctica clínica. Registra de dónde viene y con qué autorización se publica.</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content class="fields">
+              <mat-form-field class="span-2">
+                <mat-label>Autoría o procedencia *</mat-label>
+                <textarea matInput formControlName="procedencia" rows="2" maxlength="4000"></textarea>
+                <mat-error>{{ form.controls.procedencia.getError('server') ?? 'Máximo 4000 caracteres.' }}</mat-error>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Titular de los derechos *</mat-label>
+                <input matInput formControlName="titularDerechos" maxlength="200" />
+                <mat-error>{{ form.controls.titularDerechos.getError('server') ?? 'Máximo 200 caracteres.' }}</mat-error>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Licencia o autorización de uso *</mat-label>
+                <input matInput formControlName="licenciaUso" maxlength="200" />
+                <mat-error>{{ form.controls.licenciaUso.getError('server') ?? 'Máximo 200 caracteres.' }}</mat-error>
+              </mat-form-field>
+              <mat-checkbox formControlName="autorizacionPublicacion" class="span-2">
+                Cuento con autorización escrita para reproducir y publicar este material
+              </mat-checkbox>
+              <mat-form-field class="span-2">
+                <mat-label>Referencia de la autorización</mat-label>
+                <input matInput formControlName="autorizacionReferencia" maxlength="2000" />
+                <mat-hint>Correo, contrato o folio que respalda el permiso.</mat-hint>
+              </mat-form-field>
+            </mat-card-content>
+          </mat-card>
+        }
+
+        <mat-card appearance="outlined" class="admin-card">
+          <mat-card-header><mat-card-title>Fuente y revisión</mat-card-title></mat-card-header>
+          <mat-card-content class="fields">
+            <mat-form-field class="span-2">
+              <mat-label>Título de la fuente *</mat-label>
+              <input matInput formControlName="fuenteTitulo" maxlength="300" />
+              <mat-error>{{ form.controls.fuenteTitulo.getError('server') ?? 'Máximo 300 caracteres.' }}</mat-error>
+            </mat-form-field>
+            <mat-form-field class="span-2">
+              <mat-label>Autores</mat-label>
+              <input matInput formControlName="fuenteAutores" maxlength="1000" />
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>URL</mat-label>
+              <input matInput type="url" formControlName="fuenteUrl" maxlength="2000" placeholder="https://" />
+              <mat-error>{{ form.controls.fuenteUrl.getError('server') ?? 'Escribe una URL completa que empiece con https://.' }}</mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>DOI</mat-label>
+              <input matInput formControlName="fuenteDoi" maxlength="150" placeholder="10.xxxx/identificador" />
+              <mat-error>{{ form.controls.fuenteDoi.getError('server') ?? 'El DOI debe tener la forma 10.xxxx/identificador.' }}</mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Publicación de la fuente</mat-label>
+              <input matInput [matDatepicker]="pubPicker" formControlName="fechaPublicacionFuente" [max]="today" />
+              <mat-datepicker-toggle matIconSuffix [for]="pubPicker" />
+              <mat-datepicker #pubPicker />
+              <mat-error>{{ form.controls.fechaPublicacionFuente.getError('server') ?? 'Fecha no válida.' }}</mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Fecha de revisión *</mat-label>
+              <input matInput [matDatepicker]="revPicker" formControlName="fechaRevision" [max]="today" />
+              <mat-datepicker-toggle matIconSuffix [for]="revPicker" />
+              <mat-datepicker #revPicker />
+              <mat-hint>Cuándo se cotejó el resumen contra la fuente.</mat-hint>
+              <mat-error>{{ form.controls.fechaRevision.getError('server') ?? 'Fecha no válida.' }}</mat-error>
+            </mat-form-field>
+          </mat-card-content>
+        </mat-card>
+
+        @if (detail(); as d) {
+          <app-block-editor [detail]="d" (changed)="blocksChanged($event)" />
+        }
+
+        @if (canEdit()) {
+          <div class="save-bar">
+            <span class="save-hint">
+              @if (form.dirty) {
+                Tienes cambios sin guardar.
+              }
+            </span>
+            <button matButton="filled" type="submit" [disabled]="saving() || (!creating() && form.pristine)">
+              <mat-icon>save</mat-icon>
+              {{ saving() ? 'Guardando…' : creating() ? 'Crear borrador' : 'Guardar cambios' }}
+            </button>
+          </div>
+        }
+      </form>
+
+      <!-- Panel de estado y flujo editorial -->
+      @if (detail(); as d) {
+        <aside class="panel" aria-label="Estado editorial">
+          <mat-card appearance="outlined" class="admin-card">
+            <mat-card-header><mat-card-title>Flujo editorial</mat-card-title></mat-card-header>
+            <mat-card-content>
+              @if (d.revisionVencida) {
+                <p class="form-alert" role="status">
+                  <mat-icon aria-hidden="true">event_busy</mat-icon>
+                  La revisión venció el {{ d.revisionVenceEl | date: 'longDate' }}. Actualiza la fecha tras revisar la fuente.
+                </p>
+              }
+              <dl class="facts">
+                <div><dt>Autor</dt><dd>{{ d.autor?.nombre ?? 'Sin asignar' }}</dd></div>
+                <div><dt>Revisor</dt><dd>{{ d.revisor?.nombre ?? 'Sin asignar' }}</dd></div>
+                @if (d.revisionVenceEl && !d.revisionVencida) {
+                  <div><dt>Vigencia de la revisión</dt><dd>Hasta el {{ d.revisionVenceEl | date: 'longDate' }}</dd></div>
+                }
+                <div><dt>Última actualización</dt><dd>{{ d.updatedAt | date: 'd MMM y, HH:mm' }}</dd></div>
+                @if (d.publicadoAt) {
+                  <div><dt>Publicado</dt><dd>{{ d.publicadoAt | date: 'd MMM y' }}</dd></div>
+                }
+                @if (d.archivadoAt && d.estado === 'ARCHIVADO') {
+                  <div><dt>Archivado</dt><dd>{{ d.archivadoAt | date: 'd MMM y' }}</dd></div>
+                }
+              </dl>
+
+              @if (form.dirty && canEdit()) {
+                <p class="hint">Guarda los cambios antes de cambiar el estado.</p>
+              }
+
+              <div class="flow-actions">
+                @if (d.acciones.enviarRevision) {
+                  <button matButton="filled" type="button" [disabled]="busy() || form.dirty" (click)="submitForReview(d)">
+                    <mat-icon>send</mat-icon>
+                    Enviar a revisión
+                  </button>
+                }
+                @for (etapa of etapasDisponibles(d); track etapa.id) {
+                  <button matButton="filled" type="button" [disabled]="busy()" (click)="approve(d, etapa.id)">
+                    <mat-icon>verified</mat-icon>
+                    Aprobar ({{ etapa.label }})
+                  </button>
+                  <button matButton="outlined" type="button" [disabled]="busy()" (click)="requestChanges(d, etapa.id)">
+                    <mat-icon>assignment_return</mat-icon>
+                    Solicitar cambios ({{ etapa.label }})
+                  </button>
+                }
+                @if (d.acciones.publicar) {
+                  <button matButton="filled" type="button" [disabled]="busy() || form.dirty" (click)="publish(d)">
+                    <mat-icon>public</mat-icon>
+                    Publicar
+                  </button>
+                }
+                @if (d.acciones.restaurar) {
+                  <button matButton="outlined" type="button" [disabled]="busy()" (click)="restore(d)">
+                    <mat-icon>unarchive</mat-icon>
+                    Restaurar como borrador
+                  </button>
+                }
+                @if (d.acciones.archivar) {
+                  <button matButton="outlined" type="button" class="danger" [disabled]="busy()" (click)="archive(d)">
+                    <mat-icon>inventory_2</mat-icon>
+                    Archivar
+                  </button>
+                }
+                @if (d.estado === 'PUBLICADO') {
+                  <a matButton [routerLink]="['/app/contenido', d.slug]">
+                    <mat-icon>visibility</mat-icon>
+                    Ver como alumno
+                  </a>
+                }
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          @if (d.acciones.cambiarAcceso) {
+            <mat-card appearance="outlined" class="admin-card">
+              <mat-card-header>
+                <mat-card-title>Tier de la guía</mat-card-title>
+                <mat-card-subtitle>Actual: {{ acceso() }}. Las guías siempre son de pago.</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content class="assign">
+                <mat-form-field>
+                  <mat-label>Tier mínimo</mat-label>
+                  <mat-select [(ngModel)]="accTier" [ngModelOptions]="{ standalone: true }">
+                    @for (tier of tiers.value() ?? []; track tier.id) {
+                      <mat-option [value]="tier.id">{{ tier.nombre }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>Motivo del cambio</mat-label>
+                  <input matInput [(ngModel)]="accMotivo" [ngModelOptions]="{ standalone: true }" maxlength="1000" />
+                </mat-form-field>
+                <button
+                  matButton="tonal"
+                  type="button"
+                  [disabled]="busy() || !accMotivo.trim() || accTier === null || accTier === d.tierMinimo?.id"
+                  (click)="saveAccess(d)"
+                >
+                  Guardar tier
+                </button>
+              </mat-card-content>
+            </mat-card>
+          } @else {
+            <mat-card appearance="outlined" class="admin-card">
+              <mat-card-header>
+                <mat-card-title>Acceso</mat-card-title>
+                <mat-card-subtitle>{{ acceso() }}</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <p class="hint">
+                  @switch (d.tipo) {
+                    @case ('ARTICULO') { Los artículos son gratis con cuenta, sin importar el tier. }
+                    @case ('RECURSO_ESTUDIO') { El material de estudio siempre es del tier Premium. }
+                    @default { El tier de esta guía no se puede editar en su estado actual. }
+                  }
+                </p>
+              </mat-card-content>
+            </mat-card>
+          }
+
+          @if (d.acciones.asignar) {
+            <mat-card appearance="outlined" class="admin-card">
+              <mat-card-header><mat-card-title>Responsables</mat-card-title></mat-card-header>
+              <mat-card-content class="assign">
+                <mat-form-field subscriptSizing="dynamic">
+                  <mat-label>Autor</mat-label>
+                  <mat-select [value]="autorId()" (selectionChange)="autorId.set($event.value)">
+                    <mat-option [value]="null">Sin asignar</mat-option>
+                    @for (p of candidates.value()?.autores ?? []; track p.id) {
+                      <mat-option [value]="p.id">{{ p.nombre }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field subscriptSizing="dynamic">
+                  <mat-label>Revisor</mat-label>
+                  <mat-select [value]="revisorId()" (selectionChange)="revisorId.set($event.value)">
+                    <mat-option [value]="null">Sin asignar</mat-option>
+                    @for (p of candidates.value()?.revisores ?? []; track p.id) {
+                      <mat-option [value]="p.id" [disabled]="p.id === autorId()">{{ p.nombre }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <button
+                  matButton="tonal"
+                  type="button"
+                  [disabled]="busy() || (autorId() === (d.autor?.id ?? null) && revisorId() === (d.revisor?.id ?? null))"
+                  (click)="saveAssignment(d)"
+                >
+                  Guardar responsables
+                </button>
+              </mat-card-content>
+            </mat-card>
+          }
+
+          <mat-card appearance="outlined" class="admin-card">
+            <mat-card-header><mat-card-title>Historial de revisión</mat-card-title></mat-card-header>
+            <mat-card-content>
+              @if (d.revisiones.length === 0) {
+                <p class="hint">Todavía no hay decisiones de revisión.</p>
+              } @else {
+                <ol class="reviews">
+                  @for (r of d.revisiones; track r.id) {
+                    <li>
+                      <span class="review-head">
+                        <mat-icon aria-hidden="true">{{ r.decision === 'APROBADO' ? 'verified' : 'assignment_return' }}</mat-icon>
+                        <strong>{{ r.decision === 'APROBADO' ? 'Aprobado' : 'Cambios solicitados' }} · {{ r.etapa === 'CLINICA' ? 'clínica' : 'editorial' }}</strong>
+                        <span class="hint">{{ r.createdAt | date: 'd MMM y, HH:mm' }}</span>
+                      </span>
+                      <span class="hint">{{ r.revisor?.nombre ?? 'Registro del sistema' }}</span>
+                      @if (r.comentario) {
+                        <p class="review-comment">{{ r.comentario }}</p>
+                      }
+                    </li>
+                  }
+                </ol>
+              }
+            </mat-card-content>
+          </mat-card>
+        </aside>
+      }
+    </div>
+  }
+</div>

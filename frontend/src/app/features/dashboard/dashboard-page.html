@@ -1,0 +1,84 @@
+<div class="page-container page">
+  @if (!searching()) {
+    <section class="welcome" aria-labelledby="welcome-title">
+      <div class="welcome-copy">
+        <p class="eyebrow">Tu espacio de aprendizaje</p>
+        <h1 id="welcome-title" class="welcome-title">Hola, {{ user()?.nombre }}</h1>
+        <p class="welcome-tier">
+          <mat-icon aria-hidden="true">workspace_premium</mat-icon>
+          Tier actual: <strong>{{ user()?.tier?.nombre }}</strong>
+        </p>
+      </div>
+      @if (learning.hasValue()) {
+        <dl class="stats">
+          <div class="stat">
+            <dt>En progreso</dt>
+            <dd>{{ learning.value().enProgreso }}</dd>
+          </div>
+          <div class="stat">
+            <dt>Completados</dt>
+            <dd>{{ learning.value().completados }}</dd>
+          </div>
+        </dl>
+      }
+    </section>
+
+    <section class="block" aria-labelledby="continue-title">
+      <h2 id="continue-title" class="block-title">Continuar aprendizaje</h2>
+      @if (learning.isLoading()) {
+        <mat-progress-bar mode="indeterminate" aria-label="Cargando tu último artículo" />
+      } @else if (learning.error()) {
+        <app-state-message
+          icon="cloud_off"
+          tone="error"
+          title="No pudimos cargar tu progreso"
+          message="Revisa tu conexión e inténtalo de nuevo."
+        >
+          <button matButton="tonal" (click)="learning.reload()">Reintentar</button>
+        </app-state-message>
+      } @else if (learning.value()?.ultimo; as ultimo) {
+        <mat-card appearance="filled" class="continue-card">
+          <div class="continue-icon" aria-hidden="true">
+            <mat-icon>{{ ultimo.progreso.estado === 'COMPLETADO' ? 'task_alt' : 'auto_stories' }}</mat-icon>
+          </div>
+          <div class="continue-body">
+            <p class="continue-area">
+              {{ tipoLabel[ultimo.contenido.tipo].corto }}
+              @if (ultimo.contenido.areaMedica) {
+                · {{ ultimo.contenido.areaMedica }}
+              }
+            </p>
+            <h3 class="continue-title">{{ ultimo.contenido.titulo }}</h3>
+            <p class="continue-meta">
+              @if (ultimo.progreso.estado === 'COMPLETADO') {
+                <span class="status status--done">Completado</span>
+              } @else {
+                <span class="status">En progreso</span>
+              }
+              Último acceso: {{ ultimo.progreso.ultimaConsultaAt | date: 'd MMM, HH:mm' }}
+            </p>
+          </div>
+          <a matButton="filled" class="continue-action" [routerLink]="['/app/contenido', ultimo.contenido.slug]">
+            {{ ultimo.progreso.estado === 'COMPLETADO' ? 'Repasar' : 'Continuar' }}
+            <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+          </a>
+        </mat-card>
+      } @else {
+        <app-state-message
+          icon="explore"
+          title="Aún no has abierto ningún artículo"
+          message="Elige uno del catálogo y aparecerá aquí para que lo retomes cuando quieras."
+        />
+      }
+    </section>
+  }
+
+  <app-catalog-browser
+    [query]="query()"
+    [page]="pageIndex()"
+    [tipo]="tipoFiltro()"
+    basePath="/app/contenido"
+    clearPath="/app"
+    titulo="Biblioteca"
+  />
+</div>

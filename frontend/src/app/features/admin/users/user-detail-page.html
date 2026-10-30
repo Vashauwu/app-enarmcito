@@ -1,0 +1,167 @@
+<div class="page-container admin-page">
+  <a matButton routerLink="/admin/usuarios" class="back">
+    <mat-icon>arrow_back</mat-icon>
+    Usuarios
+  </a>
+
+  @if (resource.isLoading() && !detail()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando usuario" />
+  } @else if (loadError(); as error) {
+    <app-state-message
+      [icon]="error.status === 404 ? 'person_off' : 'cloud_off'"
+      [tone]="error.status === 404 ? 'neutral' : 'error'"
+      [title]="error.status === 404 ? 'Usuario no disponible' : 'No pudimos cargar el usuario'"
+      [message]="error.message"
+    >
+      <a matButton="tonal" routerLink="/admin/usuarios">Volver al listado</a>
+    </app-state-message>
+  } @else if (detail(); as d) {
+    @if (busy()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Aplicando cambio" />
+    }
+    <header class="admin-header">
+      <div>
+        <h1 class="admin-title">{{ d.usuario.nombre }} {{ d.usuario.apellido }}</h1>
+        <p class="admin-subtitle">{{ d.usuario.correo }}</p>
+      </div>
+      <app-status-badge [status]="accountStatus[d.usuario.estado]" />
+    </header>
+
+    <div class="layout">
+      <div class="column">
+        <mat-card appearance="outlined" class="admin-card">
+          <mat-card-header>
+            <mat-card-title>Datos y tier</mat-card-title>
+            @if (!d.acciones.editarDatos && !d.acciones.cambiarTier) {
+              <mat-card-subtitle>Sólo lectura para tu rol.</mat-card-subtitle>
+            }
+          </mat-card-header>
+          <mat-card-content>
+            @if (errorMessage(); as message) {
+              <p class="form-alert" role="alert"><mat-icon aria-hidden="true">error</mat-icon>{{ message }}</p>
+            }
+            <form [formGroup]="form" (ngSubmit)="save()" novalidate class="form">
+              <div class="form-row">
+                <mat-form-field>
+                  <mat-label>Nombre</mat-label>
+                  <input matInput formControlName="nombre" maxlength="80" />
+                  <mat-error>{{ form.controls.nombre.getError('server') ?? 'Escribe el nombre.' }}</mat-error>
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>Apellido</mat-label>
+                  <input matInput formControlName="apellido" maxlength="100" />
+                  <mat-error>{{ form.controls.apellido.getError('server') ?? 'Escribe el apellido.' }}</mat-error>
+                </mat-form-field>
+              </div>
+              <mat-form-field>
+                <mat-label>Tier</mat-label>
+                <mat-select formControlName="tierId">
+                  @for (tier of options.value()?.tiers ?? [d.usuario.tier]; track tier.id) {
+                    <mat-option [value]="tier.id">{{ tier.nombre }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              @if (d.acciones.editarDatos || d.acciones.cambiarTier) {
+                <mat-form-field>
+                  <mat-label>Motivo del cambio (opcional)</mat-label>
+                  <input matInput formControlName="motivo" maxlength="1000" />
+                  <mat-hint>Se guarda en la bitácora junto con el cambio.</mat-hint>
+                </mat-form-field>
+                <div class="actions">
+                  <button matButton="filled" type="submit" [disabled]="form.pristine || saving()">
+                    {{ saving() ? 'Guardando…' : 'Guardar cambios' }}
+                  </button>
+                </div>
+              }
+            </form>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card appearance="outlined" class="admin-card">
+          <mat-card-header>
+            <mat-card-title>Actividad de aprendizaje</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <dl class="facts">
+              <div><dt>Completados</dt><dd>{{ d.actividad.completados }}</dd></div>
+              <div><dt>En progreso</dt><dd>{{ d.actividad.enProgreso }}</dd></div>
+              <div>
+                <dt>Última lectura</dt>
+                <dd>{{ d.actividad.ultimaConsultaAt ? (d.actividad.ultimaConsultaAt | date: 'd MMM y, HH:mm') : 'Sin lecturas' }}</dd>
+              </div>
+            </dl>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <div class="column">
+        <mat-card appearance="outlined" class="admin-card">
+          <mat-card-header>
+            <mat-card-title>Cuenta</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <dl class="facts facts--stacked">
+              <div><dt>Rol</dt><dd>{{ roleLabel[d.usuario.rol] }}</dd></div>
+              <div><dt>Alta</dt><dd>{{ d.usuario.createdAt | date: 'longDate' }}</dd></div>
+              <div>
+                <dt>Último acceso</dt>
+                <dd>{{ d.usuario.lastLoginAt ? (d.usuario.lastLoginAt | date: 'd MMM y, HH:mm') : 'Nunca' }}</dd>
+              </div>
+              @if (d.bloqueoMotivo) {
+                <div>
+                  <dt>Motivo del bloqueo</dt>
+                  <dd>{{ d.bloqueoMotivo }} <span class="muted">({{ d.bloqueadoAt | date: 'd MMM y' }})</span></dd>
+                </div>
+              }
+            </dl>
+
+            @if (d.acciones.cambiarRol) {
+              <div class="inline-action">
+                <mat-form-field subscriptSizing="dynamic">
+                  <mat-label>Nuevo rol</mat-label>
+                  <mat-select [value]="newRole()" (selectionChange)="newRole.set($event.value)">
+                    @for (rol of d.acciones.rolesAsignables; track rol) {
+                      @if (rol !== d.usuario.rol) {
+                        <mat-option [value]="rol">{{ roleLabel[rol] }}</mat-option>
+                      }
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <button matButton="outlined" type="button" [disabled]="!newRole() || busy()" (click)="changeRole()">
+                  Cambiar rol
+                </button>
+              </div>
+            }
+
+            <div class="actions actions--wrap">
+              @if (d.acciones.cambiarEstado) {
+                <button
+                  matButton="outlined"
+                  type="button"
+                  [class.danger]="d.usuario.estado === 'ACTIVO'"
+                  [disabled]="busy()"
+                  (click)="toggleBlock()"
+                >
+                  <mat-icon>{{ d.usuario.estado === 'ACTIVO' ? 'block' : 'lock_open' }}</mat-icon>
+                  {{ d.usuario.estado === 'ACTIVO' ? 'Bloquear cuenta' : 'Desbloquear cuenta' }}
+                </button>
+              }
+              @if (d.acciones.restablecerAcceso) {
+                <button matButton="outlined" type="button" [disabled]="busy()" (click)="resetAccess()">
+                  <mat-icon>key</mat-icon>
+                  {{ d.usuario.estado === 'PENDIENTE' ? 'Nueva invitación' : 'Restablecer acceso' }}
+                </button>
+              }
+              @if (auth.can('audit.read')) {
+                <a matButton routerLink="/admin/auditoria" [queryParams]="{ recursoId: d.usuario.id }">
+                  <mat-icon>history</mat-icon>
+                  Ver bitácora
+                </a>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+  }
+</div>

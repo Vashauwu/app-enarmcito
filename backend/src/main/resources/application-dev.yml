@@ -1,0 +1,19 @@
+# Ambiente `dev` (Render + Neon dev). Se activa con SPRING_PROFILES_ACTIVE=dev.
+# La base, el origen del frontend y los secretos llegan por variables de entorno (ver docs/despliegue-cicd-dev-prod.md).
+server:
+  servlet:
+    session:
+      cookie:
+        # Servido siempre por HTTPS.
+        secure: true
+
+app:
+  # Cuentas y artículos demo para validar el ambiente integrado; APP_DEMO_DATA=false los desactiva.
+  demo-data: ${APP_DEMO_DATA:true}
+
+logging:
+  level:
+    root: INFO
+    # Estas clases escriben la URL JDBC al arrancar; no debe quedar en los logs de la plataforma.
+    org.flywaydb.core.FlywayExecutor: WARN
+    org.hibernate.orm.connections.pooling: WARN

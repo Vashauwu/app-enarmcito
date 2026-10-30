@@ -1,0 +1,141 @@
+<main class="auth-page">
+  <mat-card appearance="outlined" class="auth-card">
+    <mat-card-content>
+      <a class="auth-brand" routerLink="/">
+        <mat-icon aria-hidden="true">stethoscope</mat-icon>
+        {{ appName }}
+      </a>
+      <h1 class="auth-title">Crear cuenta</h1>
+      <p class="auth-subtitle">Empieza a estudiar con artículos en lectura guiada.</p>
+
+      @if (errorMessage(); as message) {
+        <p class="form-alert" role="alert">
+          <mat-icon aria-hidden="true">error</mat-icon>
+          {{ message }}
+        </p>
+      }
+
+      <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="form-row">
+          <mat-form-field>
+            <mat-label>Nombre</mat-label>
+            <input matInput formControlName="nombre" autocomplete="given-name" />
+            @if (form.controls.nombre.hasError('server')) {
+              <mat-error>{{ form.controls.nombre.getError('server') }}</mat-error>
+            } @else if (form.controls.nombre.hasError('maxlength')) {
+              <mat-error>Máximo 80 caracteres.</mat-error>
+            } @else if (form.controls.nombre.invalid) {
+              <mat-error>Escribe tu nombre.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field>
+            <mat-label>Apellido</mat-label>
+            <input matInput formControlName="apellido" autocomplete="family-name" />
+            @if (form.controls.apellido.hasError('server')) {
+              <mat-error>{{ form.controls.apellido.getError('server') }}</mat-error>
+            } @else if (form.controls.apellido.hasError('maxlength')) {
+              <mat-error>Máximo 100 caracteres.</mat-error>
+            } @else if (form.controls.apellido.invalid) {
+              <mat-error>Escribe tu apellido.</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <mat-form-field>
+          <mat-label>Correo electrónico</mat-label>
+          <input matInput type="email" formControlName="correo" autocomplete="email" inputmode="email" />
+          @if (form.controls.correo.hasError('server')) {
+            <mat-error>{{ form.controls.correo.getError('server') }}</mat-error>
+          } @else if (form.controls.correo.hasError('required')) {
+            <mat-error>Escribe tu correo.</mat-error>
+          } @else if (form.controls.correo.invalid) {
+            <mat-error>Escribe un correo válido.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Contraseña</mat-label>
+          <input
+            matInput
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="password"
+            autocomplete="new-password"
+          />
+          <button
+            matIconButton
+            matSuffix
+            type="button"
+            (click)="hidePassword.set(!hidePassword())"
+            [attr.aria-label]="hidePassword() ? 'Mostrar contraseñas' : 'Ocultar contraseñas'"
+            [attr.aria-pressed]="!hidePassword()"
+          >
+            <mat-icon>{{ hidePassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
+          </button>
+          <mat-hint>Al menos {{ passwordMinLength }} caracteres.</mat-hint>
+          @if (form.controls.password.hasError('server')) {
+            <mat-error>{{ form.controls.password.getError('server') }}</mat-error>
+          } @else if (form.controls.password.hasError('required')) {
+            <mat-error>Escribe una contraseña.</mat-error>
+          } @else if (form.controls.password.hasError('minlength')) {
+            <mat-error>Usa al menos {{ passwordMinLength }} caracteres.</mat-error>
+          } @else if (form.controls.password.hasError('maxlength')) {
+            <mat-error>La contraseña es demasiado larga.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Confirmar contraseña</mat-label>
+          <input
+            matInput
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+          />
+          @if (form.controls.confirmPassword.hasError('passwordMismatch')) {
+            <mat-error>Las contraseñas no coinciden.</mat-error>
+          } @else if (form.controls.confirmPassword.hasError('required')) {
+            <mat-error>Confirma tu contraseña.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Tier del curso</mat-label>
+          <mat-select formControlName="tierId">
+            @for (tier of tiers.value() ?? []; track tier.id) {
+              <mat-option [value]="tier.id">{{ tier.nombre }}</mat-option>
+            }
+          </mat-select>
+          @if (selectedTier(); as tier) {
+            <mat-hint>{{ tier.descripcion }}</mat-hint>
+          } @else if (tiers.isLoading()) {
+            <mat-hint>Cargando tiers…</mat-hint>
+          }
+          @if (form.controls.tierId.hasError('server')) {
+            <mat-error>{{ form.controls.tierId.getError('server') }}</mat-error>
+          } @else {
+            <mat-error>Selecciona un tier.</mat-error>
+          }
+        </mat-form-field>
+
+        @if (tiers.error()) {
+          <p class="form-alert" role="alert">
+            <mat-icon aria-hidden="true">cloud_off</mat-icon>
+            <span>
+              No pudimos cargar los tiers.
+              <button matButton type="button" (click)="tiers.reload()">Reintentar</button>
+            </span>
+          </p>
+        }
+
+        <button matButton="filled" type="submit" class="form-submit" [disabled]="submitting()">
+          {{ submitting() ? 'Creando cuenta…' : 'Crear cuenta' }}
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        ¿Ya tienes cuenta? <a routerLink="/login">Iniciar sesión</a>
+      </p>
+    </mat-card-content>
+  </mat-card>
+</main>

@@ -1,0 +1,75 @@
+<a class="skip-link" href="#contenido-principal">Saltar al contenido</a>
+
+<mat-toolbar class="toolbar">
+  <div class="toolbar-inner page-container">
+    <a class="brand" routerLink="/app" [attr.aria-label]="appName + ', mi aprendizaje'">
+      <span class="brand-mark" aria-hidden="true"><mat-icon>stethoscope</mat-icon></span>
+      <span class="brand-name">{{ appName }}</span>
+    </a>
+
+    <form class="search" role="search" (ngSubmit)="submitSearch()">
+      <mat-form-field class="search-field" subscriptSizing="dynamic">
+        <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+        <input
+          matInput
+          type="search"
+          [formControl]="search"
+          [maxlength]="searchMaxLength"
+          placeholder="Buscar por tema o área médica"
+          aria-label="Buscar artículos por tema o área médica"
+          enterkeyhint="search"
+        />
+        @if (search.value) {
+          <button matIconButton matSuffix type="button" (click)="clearSearch()" aria-label="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+    </form>
+
+    <div class="user-area">
+    <app-theme-toggle />
+    <button
+      matButton
+      class="user-button"
+      [matMenuTriggerFor]="userMenu"
+      [attr.aria-label]="'Menú de cuenta de ' + user()?.nombre"
+    >
+      <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+      <span class="user-name">{{ user()?.nombre }}</span>
+      <mat-icon iconPositionEnd aria-hidden="true">expand_more</mat-icon>
+    </button>
+    </div>
+
+    <mat-menu #userMenu="matMenu" xPosition="before">
+      <div class="menu-header">
+        <strong>{{ user()?.nombre }} {{ user()?.apellido }}</strong>
+        <span>{{ user()?.correo }}</span>
+        <span class="menu-tier">Tier {{ user()?.tier?.nombre }}</span>
+      </div>
+      <mat-divider />
+      <a mat-menu-item routerLink="/app">
+        <mat-icon>auto_stories</mat-icon>
+        <span>Mi aprendizaje</span>
+      </a>
+      <a mat-menu-item routerLink="/app/perfil">
+        <mat-icon>person</mat-icon>
+        <span>Mi perfil</span>
+      </a>
+      @if (canAdmin()) {
+        <a mat-menu-item routerLink="/admin">
+          <mat-icon>admin_panel_settings</mat-icon>
+          <span>Panel administrativo</span>
+        </a>
+      }
+      <button mat-menu-item (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        <span>Cerrar sesión</span>
+      </button>
+    </mat-menu>
+  </div>
+</mat-toolbar>
+
+<main id="contenido-principal" class="main" tabindex="-1">
+  <router-outlet />
+</main>

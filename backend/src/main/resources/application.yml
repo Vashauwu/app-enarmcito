@@ -1,0 +1,83 @@
+spring:
+  application:
+    name: medicina
+  config:
+    # Variables locales compartidas con Docker Compose (.env en la raíz del repositorio).
+    import: "optional:file:../.env[.properties],optional:file:.env[.properties]"
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/medicina_mvp}
+    username: ${SPRING_DATASOURCE_USERNAME:medicina_dev}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  servlet:
+    multipart:
+      max-file-size: 26MB
+      max-request-size: 27MB
+  flyway:
+    locations: classpath:db/migration
+    # Esquema en V1–V99 y datos demo en V100+: una migración de esquema nueva puede llegar después de
+    # que la base ya tenga aplicados los datos demo.
+    out-of-order: true
+
+server:
+  port: 8080
+  error:
+    include-message: never
+    include-stacktrace: never
+  servlet:
+    session:
+      timeout: 8h
+      cookie:
+        name: MEDICINA_SESSION
+        http-only: true
+        same-site: ${APP_COOKIE_SAME_SITE:lax}
+        secure: ${APP_COOKIE_SECURE:${SESSION_COOKIE_SECURE:false}}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Sólo salud; nada de env, beans ni métricas.
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      # /actuator/health/liveness no consulta la base: sirve para el health check de la plataforma sin
+      # mantener despierta la base de datos serverless.
+      probes:
+        enabled: true
+
+app:
+  # Origen exacto del frontend (CORS con credenciales). APP_FRONTEND_ORIGIN es el nombre en Render/CI.
+  frontend-origin: ${APP_FRONTEND_ORIGIN:${FRONTEND_ORIGIN:http://localhost:4200}}
+  # Añade classpath:db/demo (artículos y cuentas de demostración) a las migraciones de Flyway.
+  demo-data: ${APP_DEMO_DATA:true}
+  registration:
+    allow-tier-selection: ${APP_REGISTRATION_ALLOW_TIER_SELECTION:true}
+  admin:
+    # Un usuario es «activo» si inició sesión dentro de este periodo.
+    active-user-days: ${APP_ADMIN_ACTIVE_USER_DAYS:30}
+    # Vigencia de la fecha de revisión de un artículo publicado y aviso previo al vencimiento.
+    review-validity-months: ${APP_ADMIN_REVIEW_VALIDITY_MONTHS:24}
+    review-warning-days: ${APP_ADMIN_REVIEW_WARNING_DAYS:60}
+    # Vigencia de los enlaces de invitación y restablecimiento de acceso.
+    access-link-hours: ${APP_ADMIN_ACCESS_LINK_HOURS:72}
+    # Primer SUPER_ADMIN fuera del entorno demo. Sólo se aplica si no existe ninguno activo.
+    bootstrap-super-admin-email: ${APP_BOOTSTRAP_SUPERADMIN_EMAIL:}
+    bootstrap-super-admin-password: ${APP_BOOTSTRAP_SUPERADMIN_PASSWORD:}
+  content:
+    # Qué hacer con una GPC publicada cuya vigencia o próxima revisión venció:
+    # ADVERTIR (sigue visible con aviso «requiere actualización») o RETIRAR (deja de mostrarse).
+    expired-guide-policy: ${APP_CONTENT_EXPIRED_GUIDE_POLICY:ADVERTIR}
+  media:
+    # Directorio de almacenamiento de archivos, fuera de la base de datos y del directorio web.
+    storage-dir: ${APP_MEDIA_STORAGE_DIR:../storage/media}
+    max-image-bytes: ${APP_MEDIA_MAX_IMAGE_BYTES:10485760}
+    max-pdf-bytes: ${APP_MEDIA_MAX_PDF_BYTES:26214400}
+    max-image-pixels: ${APP_MEDIA_MAX_IMAGE_PIXELS:8000}
+    # Antivirus ClamAV (clamd). Vacío = sólo validaciones estructurales del archivo.
+    clamav-host: ${APP_MEDIA_CLAMAV_HOST:}
+    clamav-port: ${APP_MEDIA_CLAMAV_PORT:3310}

@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:18
+    container_name: medicina-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-medicina_mvp}
+      POSTGRES_USER: ${POSTGRES_USER:-medicina_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    # A partir de PostgreSQL 18 el volumen se monta en /var/lib/postgresql
+    volumes:
+      - medicina-db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  medicina-db-data:

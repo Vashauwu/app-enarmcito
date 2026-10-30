@@ -1,0 +1,263 @@
+@if (content()) {
+  <mat-progress-bar class="reading-progress" mode="determinate" [value]="readingProgress()" aria-label="Avance de lectura" />
+}
+
+<div class="page-container page">
+  <a matButton [routerLink]="volver" class="back">
+    <mat-icon>arrow_back</mat-icon>
+    Mi aprendizaje
+  </a>
+
+  @if (reading.isLoading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando" />
+  } @else if (problem(); as problem) {
+    @switch (problem.kind) {
+      @case ('login') {
+        <app-state-message icon="person" title="Este material es para cuentas registradas" [message]="problem.message">
+          <a matButton="filled" routerLink="/registro">Crear cuenta gratuita</a>
+          <a matButton="tonal" routerLink="/login" [queryParams]="{ returnUrl: '/app/contenido/' + slug() }">Iniciar sesión</a>
+        </app-state-message>
+      }
+      @case ('locked') {
+        <app-state-message icon="lock" title="Este material no está incluido en tu tier" [message]="problem.message">
+          <a matButton="filled" [routerLink]="volver">Ver contenido disponible</a>
+        </app-state-message>
+      }
+      @case ('not-found') {
+        <app-state-message icon="search_off" title="Contenido no disponible" [message]="problem.message">
+          <a matButton="filled" [routerLink]="volver">Volver a la biblioteca</a>
+        </app-state-message>
+      }
+      @default {
+        <app-state-message icon="cloud_off" tone="error" title="No pudimos abrir el contenido" [message]="problem.message">
+          <button matButton="tonal" (click)="reading.reload()">Reintentar</button>
+        </app-state-message>
+      }
+    }
+  } @else if (content(); as c) {
+    <div class="layout">
+      <article class="article" aria-labelledby="article-title" [attr.data-tipo]="c.tipo">
+        <header class="article-header">
+          <p class="labels">
+            <span class="label label--type">
+              <mat-icon aria-hidden="true">{{ tipos[c.tipo].icon }}</mat-icon>
+              {{ tipos[c.tipo].label }}
+            </span>
+            @if (c.areaMedica) {
+              <span class="label label--area">{{ c.areaMedica }}</span>
+            }
+            @if (acceso(); as a) {
+              <span class="label"><mat-icon aria-hidden="true">{{ a.icon }}</mat-icon>{{ a.label }}</span>
+            }
+          </p>
+          <h1 id="article-title" class="article-title">{{ c.titulo }}</h1>
+
+          @if (c.tipo === 'RECURSO_ESTUDIO') {
+            <p class="notice notice--study">
+              <mat-icon aria-hidden="true">school</mat-icon>
+              <strong>Material de estudio; no es guía de práctica clínica.</strong>
+            </p>
+          }
+          @if (reading.value()?.requiereActualizacion) {
+            <p class="notice notice--outdated" role="status">
+              <mat-icon aria-hidden="true">update</mat-icon>
+              <span>
+                <strong>Requiere actualización.</strong> La vigencia o la revisión de este contenido venció
+                @if (c.proximaRevision) {
+                  el {{ c.proximaRevision | date: 'longDate' }}
+                }
+                ; consulta la fuente original antes de aplicarlo.
+              </span>
+            </p>
+          }
+
+          <ul class="meta">
+            @if (c.tiempoLecturaMinutos) {
+              <li><mat-icon aria-hidden="true">schedule</mat-icon>{{ c.tiempoLecturaMinutos }} min de lectura</li>
+            }
+            @if (c.fechaRevision) {
+              <li><mat-icon aria-hidden="true">event_available</mat-icon>Revisado el {{ c.fechaRevision | date: 'longDate' }}</li>
+            }
+            <li><mat-icon aria-hidden="true">history</mat-icon>Versión {{ c.version }} · {{ c.publicadoAt | date: 'd MMM y' }}</li>
+            @if (auth.isAuthenticated() && progress()) {
+              <li>
+                @if (completed()) {
+                  <span class="status status--done"><mat-icon aria-hidden="true">task_alt</mat-icon>Completado</span>
+                } @else {
+                  <span class="status"><mat-icon aria-hidden="true">pending</mat-icon>En progreso</span>
+                }
+              </li>
+            }
+          </ul>
+        </header>
+
+        <ol class="steps">
+          @for (section of sections(); track section.id; let i = $index) {
+            <li class="step" [id]="section.id">
+              <h2 class="step-title">
+                <span class="step-number" aria-hidden="true">{{ i + 1 }}</span>
+                {{ section.title }}
+              </h2>
+              <div class="step-body">
+                @switch (section.id) {
+                  @case ('objetivo') {
+                    <p class="lead">{{ c.objetivoAprendizaje }}</p>
+                  }
+                  @case ('resumen') {
+                    <p>{{ c.resumen }}</p>
+                  }
+                  @case ('alcance') {
+                    <dl class="scope">
+                      @if (c.guia?.poblacionObjetivo) {
+                        <div><dt>Población objetivo</dt><dd>{{ c.guia?.poblacionObjetivo }}</dd></div>
+                      }
+                      @if (c.guia?.contextoAtencion) {
+                        <div><dt>Contexto de atención</dt><dd>{{ c.guia?.contextoAtencion }}</dd></div>
+                      }
+                      @if (c.guia?.alcanceClinico) {
+                        <div><dt>Alcance clínico</dt><dd>{{ c.guia?.alcanceClinico }}</dd></div>
+                      }
+                    </dl>
+                  }
+                  @case ('recomendaciones') {
+                    <ol class="recommendations">
+                      @for (r of c.guia?.recomendaciones ?? []; track $index) {
+                        <li class="recommendation">
+                          <p>{{ r.texto }}</p>
+                          <p class="evidence">
+                            @if (r.fuerza) {
+                              <span class="chip"><strong>Fuerza:</strong> {{ r.fuerza }}</span>
+                            }
+                            @if (r.nivelEvidencia) {
+                              <span class="chip"><strong>Evidencia:</strong> {{ r.nivelEvidencia }}</span>
+                            }
+                            @if (r.referencia) {
+                              <span class="ref">{{ r.referencia }}</span>
+                            }
+                          </p>
+                        </li>
+                      }
+                    </ol>
+                  }
+                  @case ('puntos-clave') {
+                    <ul class="key-points">
+                      @for (point of c.puntosClave; track $index) {
+                        <li>
+                          <mat-icon aria-hidden="true">check_circle</mat-icon>
+                          <span>{{ point }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
+                  @case ('aplicacion-clinica') {
+                    <p class="clinical">{{ c.aplicacionClinica }}</p>
+                  }
+                  @case ('desarrollo') {
+                    <div class="blocks">
+                      @for (block of c.bloques; track block.id) {
+                        <app-block-renderer [block]="block" />
+                      }
+                    </div>
+                  }
+                  @case ('fuente') {
+                    <div class="source">
+                      @if (c.recurso; as r) {
+                        <dl class="source-details">
+                          <div><dt>Procedencia</dt><dd>{{ r.procedencia }}</dd></div>
+                          <div><dt>Titular de derechos</dt><dd>{{ r.titularDerechos }}</dd></div>
+                          <div><dt>Uso</dt><dd>{{ r.licenciaUso }}</dd></div>
+                        </dl>
+                      }
+                      @if (c.fuente.titulo) {
+                        <p class="source-citation">
+                          @if (c.fuente.autores) {
+                            {{ c.fuente.autores }}
+                          }
+                          <cite>{{ c.fuente.titulo }}</cite>
+                        </p>
+                      }
+                      @if (c.tipo === 'GUIA_PRACTICA_CLINICA') {
+                        <p class="issuer">
+                          <mat-icon aria-hidden="true">account_balance</mat-icon>
+                          <span>
+                            Basado en la guía emitida por <strong>{{ c.fuente.institucion }}</strong>
+                            @if (c.fuente.edicion) {
+                              (edición {{ c.fuente.edicion }})
+                            }. {{ appName }} no es la institución emisora: consulta siempre la fuente oficial.
+                          </span>
+                        </p>
+                      }
+                      <dl class="source-details">
+                        @if (c.fuente.doi) {
+                          <div><dt>DOI</dt><dd>{{ c.fuente.doi }}</dd></div>
+                        }
+                        @if (c.fuente.fechaPublicacion) {
+                          <div><dt>Publicación de la fuente</dt><dd>{{ c.fuente.fechaPublicacion | date: 'longDate' }}</dd></div>
+                        }
+                        @if (c.guia?.vigenteHasta) {
+                          <div><dt>Vigente hasta</dt><dd>{{ c.guia?.vigenteHasta | date: 'longDate' }}</dd></div>
+                        }
+                        @if (c.proximaRevision) {
+                          <div><dt>Próxima revisión</dt><dd>{{ c.proximaRevision | date: 'longDate' }}</dd></div>
+                        }
+                        @if (c.responsables.revisorClinico) {
+                          <div><dt>Revisión clínica</dt><dd>{{ c.responsables.revisorClinico }}</dd></div>
+                        }
+                      </dl>
+                      @if (c.fuente.url) {
+                        <a matButton="outlined" [href]="c.fuente.url" target="_blank" rel="noopener noreferrer">
+                          <mat-icon>open_in_new</mat-icon>
+                          Consultar la fuente original
+                        </a>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            </li>
+          }
+        </ol>
+
+        <app-medical-disclaimer />
+
+        <footer class="complete">
+          @if (!auth.isAuthenticated()) {
+            <p class="complete-hint">Crea una cuenta gratuita para guardar tu progreso.</p>
+            <a matButton="filled" routerLink="/registro">Crear cuenta</a>
+          } @else if (completed()) {
+            <div class="complete-done" role="status">
+              <mat-icon aria-hidden="true">task_alt</mat-icon>
+              <div>
+                <strong>Completado</strong>
+                @if (progress()?.completadoAt; as completadoAt) {
+                  <span>el {{ completadoAt | date: 'd MMM y, HH:mm' }}</span>
+                }
+              </div>
+            </div>
+            <a matButton="tonal" [routerLink]="volver">Elegir otro contenido</a>
+          } @else {
+            <p class="complete-hint">¿Terminaste la lectura?</p>
+            <button matButton="filled" class="complete-button" [disabled]="completing()" (click)="markCompleted(c.id)">
+              <mat-icon>done_all</mat-icon>
+              {{ completing() ? 'Guardando…' : 'Marcar como completado' }}
+            </button>
+          }
+        </footer>
+      </article>
+
+      <nav class="toc" aria-label="Secciones">
+        <p class="toc-title">En esta página</p>
+        <ol>
+          @for (section of sections(); track section.id) {
+            <li>
+              <a [routerLink]="[]" [fragment]="section.id">
+                <mat-icon aria-hidden="true">{{ section.icon }}</mat-icon>
+                {{ section.title }}
+              </a>
+            </li>
+          }
+        </ol>
+      </nav>
+    </div>
+  }
+</div>
