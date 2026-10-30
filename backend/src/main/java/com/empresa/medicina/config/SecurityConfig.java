@@ -51,6 +51,10 @@ class SecurityConfig {
 				.requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login",
 						"/api/v1/auth/acceso/consultar", "/api/v1/auth/acceso/definir-password")
 				.permitAll()
+				// Google: navegaciones del navegador. El estado del intento y la sesión se validan en el servicio.
+				.requestMatchers(HttpMethod.GET, "/api/v1/auth/proveedores", "/api/v1/auth/google/iniciar",
+						"/api/v1/auth/google/callback")
+				.permitAll()
 				.requestMatchers("/error").permitAll()
 				// Primera barrera para toda la zona administrativa; cada endpoint exige además su permiso.
 				.requestMatchers("/api/v1/admin/**").hasAuthority("admin.access")

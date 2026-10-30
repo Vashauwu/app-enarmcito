@@ -6,6 +6,13 @@
 
   <h1 class="title">Mi perfil</h1>
 
+  @if (googleResult(); as result) {
+    <p class="form-alert" [class.form-alert--info]="result.ok" [attr.role]="result.ok ? 'status' : 'alert'">
+      <mat-icon aria-hidden="true">{{ result.ok ? 'check_circle' : 'error' }}</mat-icon>
+      {{ result.text }}
+    </p>
+  }
+
   @if (user(); as u) {
     <div class="layout">
       <mat-card appearance="outlined" class="card">
@@ -54,6 +61,59 @@
               </button>
             </div>
           </form>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="card">
+        <mat-card-header>
+          <mat-card-title>Métodos de acceso</mat-card-title>
+          <mat-card-subtitle>Cómo puedes entrar a tu cuenta.</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (identities.hasValue()) {
+            @let methods = identities.value();
+            <ul class="methods">
+              <li>
+                <mat-icon aria-hidden="true">password</mat-icon>
+                <span>Correo y contraseña</span>
+                <span class="muted">{{ methods.tienePassword ? 'Activo' : 'No definida' }}</span>
+              </li>
+              @if (methods.googleDisponible || methods.googleVinculado) {
+                <li>
+                  <mat-icon aria-hidden="true">account_circle</mat-icon>
+                  <span>Google</span>
+                  <span class="muted">
+                    {{ methods.googleVinculado ? 'Vinculado' + (methods.googleCorreo ? ' · ' + methods.googleCorreo : '') : 'Sin vincular' }}
+                  </span>
+                </li>
+              }
+            </ul>
+            @if (unlinkError(); as message) {
+              <p class="form-alert" role="alert">
+                <mat-icon aria-hidden="true">error</mat-icon>
+                {{ message }}
+              </p>
+            }
+            @if (methods.googleVinculado) {
+              <button
+                matButton="outlined"
+                type="button"
+                [disabled]="unlinking() || !methods.tienePassword"
+                (click)="unlinkGoogle()"
+              >
+                {{ unlinking() ? 'Desvinculando…' : 'Desvincular Google' }}
+              </button>
+              @if (!methods.tienePassword) {
+                <p class="hint">
+                  Tu cuenta no tiene contraseña: Google es tu único método de acceso. Pide a soporte un enlace
+                  para definir una contraseña antes de desvincularlo.
+                </p>
+              }
+            } @else if (methods.googleDisponible) {
+              <app-google-sign-in modo="vincular" label="Vincular cuenta de Google" />
+            }
+            <p class="hint">Cerrar sesión aquí no cierra tu sesión de Google en el navegador.</p>
+          }
         </mat-card-content>
       </mat-card>
 

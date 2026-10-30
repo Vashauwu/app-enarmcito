@@ -15,6 +15,8 @@
         </p>
       }
 
+      <app-google-sign-in label="Registrarse con Google" [divider]="true" />
+
       <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <div class="form-row">
           <mat-form-field>

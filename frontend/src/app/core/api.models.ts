@@ -218,3 +218,16 @@ export interface ApiError {
   message: string;
   fieldErrors?: ApiFieldError[];
 }
+
+/** Proveedores de inicio de sesión configurados en el ambiente. */
+export interface AuthProviders {
+  google: boolean;
+}
+
+/** Métodos de acceso de la cuenta. Nunca incluye tokens ni identificadores del proveedor. */
+export interface Identities {
+  googleDisponible: boolean;
+  googleVinculado: boolean;
+  googleCorreo: string | null;
+  tienePassword: boolean;
+}

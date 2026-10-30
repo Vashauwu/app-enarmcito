@@ -11,6 +11,7 @@ import { Router, RouterLink } from '@angular/router';
 import { applyFieldErrors, toApiError } from '../../core/api-error';
 import { AuthService } from '../../core/auth/auth.service';
 import { APP_NAME } from '../../core/brand';
+import { GoogleSignIn } from '../../shared/google-sign-in/google-sign-in';
 import { ContentService } from '../../core/content.service';
 import {
   PASSWORD_MAX_LENGTH,
@@ -30,6 +31,7 @@ import {
     MatIconModule,
     MatInputModule,
     MatSelectModule,
+    GoogleSignIn,
   ],
   templateUrl: './register-page.html',
 })

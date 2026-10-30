@@ -28,10 +28,14 @@ describe('RegisterPage', () => {
     // La petición de tiers queda pendiente: se responde antes de esperar a que la vista esté estable.
     TestBed.tick();
     httpMock.expectOne('/api/v1/tiers').flush(TIERS);
+    // El botón de Google consulta los proveedores; estas pruebas no dependen de la respuesta.
+    httpMock.expectOne('/api/v1/auth/proveedores').flush({ google: false });
     await fixture.whenStable();
   });
 
-  afterEach(() => httpMock.verify());
+  afterEach(() => {
+    httpMock.verify();
+  });
 
   function form(): FormGroup {
     return fixture.componentInstance['form'] as FormGroup;

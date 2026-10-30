@@ -8,6 +8,10 @@ public enum AccionAuditoria {
 	SESION_INICIADA("Inicio de sesión administrativo"),
 	SESION_CERRADA("Cierre de sesión administrativo"),
 	SESION_FALLIDA("Intento fallido de inicio de sesión administrativo"),
+	IDENTIDAD_CREADA("Cuenta creada con un proveedor externo"),
+	IDENTIDAD_VINCULADA("Proveedor externo vinculado a la cuenta"),
+	IDENTIDAD_DESVINCULADA("Proveedor externo desvinculado de la cuenta"),
+	IDENTIDAD_RECHAZADA("Inicio de sesión con proveedor externo rechazado"),
 
 	USUARIO_INVITADO("Alta de cuenta por invitación"),
 	USUARIO_ACTUALIZADO("Edición de datos de usuario"),

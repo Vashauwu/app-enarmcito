@@ -14,12 +14,22 @@
           Tu sesión terminó. Vuelve a iniciar sesión para continuar.
         </p>
       }
+      @if (googleError(); as google) {
+        @if (!errorMessage()) {
+          <p class="form-alert" role="alert">
+            <mat-icon aria-hidden="true">error</mat-icon>
+            {{ google.text }}
+          </p>
+        }
+      }
       @if (errorMessage(); as message) {
         <p class="form-alert" role="alert">
           <mat-icon aria-hidden="true">error</mat-icon>
           {{ message }}
         </p>
       }
+
+      <app-google-sign-in [divider]="true" />
 
       <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <mat-form-field>

@@ -20,11 +20,11 @@
   <section class="hero">
     <div class="page-container hero-inner">
       <div class="hero-copy">
-        <p class="eyebrow">Lectura guiada para estudiar medicina</p>
-        <h1 class="hero-title">Repasa medicina con resúmenes claros y fuentes que puedes verificar</h1>
+        <p class="eyebrow">Estudio clínico para el ENARM</p>
+        <h1 class="hero-title">Entiende la decisión clínica, no solo memorices el dato</h1>
         <p class="hero-lead">
-          Artículos breves organizados en objetivo, resumen, puntos clave y aplicación clínica. Cada uno
-          cita su fuente y muestra cuándo fue revisado por última vez.
+          Guías y temas convertidos en rutas visuales con fuente, versión y fecha de revisión visibles. Crea tu
+          cuenta gratis y empieza con los artículos.
         </p>
         <div class="hero-actions">
           @if (auth.isAuthenticated()) {
@@ -34,50 +34,119 @@
             </a>
           } @else {
             <a matButton="filled" routerLink="/registro" class="cta">
-              <mat-icon>person_add</mat-icon>
-              Crear cuenta
+              <mat-icon>auto_stories</mat-icon>
+              Explorar artículos gratis
             </a>
             <a matButton="outlined" routerLink="/login" class="cta">Iniciar sesión</a>
           }
         </div>
       </div>
 
-      <!-- Vista previa ilustrativa del formato de lectura guiada -->
-      <div class="hero-preview" aria-hidden="true">
+      <!-- Ejemplo ilustrativo del formato de una guía: sin contenido clínico real. -->
+      <div class="hero-preview">
         <mat-card appearance="outlined" class="preview-card">
           <div class="preview-top">
-            <span class="preview-area">Urgencias</span>
-            <span class="preview-time"><mat-icon>schedule</mat-icon>5 min</span>
+            <span class="preview-area">Guía de práctica clínica</span>
+            <span class="preview-badge">Ejemplo ilustrativo</span>
           </div>
-          <h2 class="preview-title">Sepsis-3: definiciones de sepsis y choque séptico</h2>
-          <ol class="preview-steps">
-            <li class="done"><mat-icon>check_circle</mat-icon> Objetivo de aprendizaje</li>
-            <li class="done"><mat-icon>check_circle</mat-icon> Resumen</li>
-            <li class="current"><mat-icon>radio_button_checked</mat-icon> Puntos clave</li>
-            <li><mat-icon>radio_button_unchecked</mat-icon> Aplicación clínica</li>
-            <li><mat-icon>radio_button_unchecked</mat-icon> Fuente y revisión</li>
-          </ol>
-          <div class="preview-source">
-            <mat-icon>menu_book</mat-icon>
-            <span>JAMA. 2016 · DOI 10.1001/jama.2016.0287</span>
+          <h2 class="preview-title">Del documento a un mapa de decisiones</h2>
+
+          <div class="flow" role="img" aria-label="Ejemplo de algoritmo: un criterio clave que lleva a la conducta A si se cumple o a la conducta B si no se cumple">
+            <div class="flow-node flow-node--start">Criterio clave</div>
+            <div class="flow-branches">
+              <div class="flow-branch">
+                <span class="flow-label">Sí</span>
+                <div class="flow-node flow-node--a">Conducta A</div>
+              </div>
+              <div class="flow-branch">
+                <span class="flow-label">No</span>
+                <div class="flow-node flow-node--b">Conducta B</div>
+              </div>
+            </div>
           </div>
+
+          <dl class="preview-meta">
+            <div>
+              <dt><mat-icon aria-hidden="true">apartment</mat-icon>Emisor</dt>
+              <dd>Institución · versión</dd>
+            </div>
+            <div>
+              <dt><mat-icon aria-hidden="true">event_available</mat-icon>Revisión</dt>
+              <dd>Fecha visible</dd>
+            </div>
+          </dl>
         </mat-card>
       </div>
     </div>
   </section>
 
-  <section class="section" aria-labelledby="method-title">
+  <section class="section" id="contenido" aria-labelledby="types-title">
     <div class="page-container">
-      <h2 id="method-title" class="section-title">Un solo método: lectura guiada</h2>
+      <h2 id="types-title" class="section-title">Empieza gratis y avanza a tu ritmo</h2>
       <p class="section-lead">
-        Todos los artículos siguen la misma estructura, así sabes siempre dónde encontrar lo importante.
+        Tres tipos de contenido, cada uno con una función distinta y siempre señalado como lo que es.
+      </p>
+      <ul class="steps">
+        @for (item of contentTypes; track item.title) {
+          <li class="step">
+            <span class="step-icon" aria-hidden="true"><mat-icon>{{ item.icon }}</mat-icon></span>
+            <h3 class="step-title">{{ item.title }}</h3>
+            <p class="step-text">{{ item.text }}</p>
+          </li>
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="section section--tinted" id="confianza" aria-labelledby="trust-title">
+    <div class="page-container">
+      <h2 id="trust-title" class="section-title">Guías que se pueden verificar</h2>
+      <p class="section-lead">
+        En medicina importa saber de dónde viene cada recomendación y si sigue vigente. Por eso cada guía
+        lo muestra.
+      </p>
+      <ul class="steps">
+        @for (item of trust; track item.title) {
+          <li class="step">
+            <span class="step-icon" aria-hidden="true"><mat-icon>{{ item.icon }}</mat-icon></span>
+            <h3 class="step-title">{{ item.title }}</h3>
+            <p class="step-text">{{ item.text }}</p>
+          </li>
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" id="metodo" aria-labelledby="levels-title">
+    <div class="page-container">
+      <h2 id="levels-title" class="section-title">Un mismo tema, tres niveles de profundidad</h2>
+      <p class="section-lead">
+        Elige según el tiempo que tengas: un vistazo previo a una guardia, una lectura completa o un repaso
+        visual antes del examen.
       </p>
       <ol class="steps">
-        @for (step of steps; track step.title; let i = $index) {
+        @for (item of levels; track item.title; let i = $index) {
           <li class="step">
-            <span class="step-icon" aria-hidden="true"><mat-icon>{{ step.icon }}</mat-icon></span>
-            <h3 class="step-title"><span class="step-number">{{ i + 1 }}.</span> {{ step.title }}</h3>
-            <p class="step-text">{{ step.text }}</p>
+            <span class="step-icon" aria-hidden="true"><mat-icon>{{ item.icon }}</mat-icon></span>
+            <h3 class="step-title"><span class="step-number">{{ i + 1 }}.</span> {{ item.title }}</h3>
+            <p class="step-text">{{ item.text }}</p>
+          </li>
+        }
+      </ol>
+    </div>
+  </section>
+
+  <section class="section section--tinted" id="calidad" aria-labelledby="quality-title">
+    <div class="page-container">
+      <h2 id="quality-title" class="section-title">Cómo cuidamos la calidad</h2>
+      <p class="section-lead">
+        Nada se publica sin pasar por dos revisiones, y lo publicado se vuelve a revisar con el tiempo.
+      </p>
+      <ol class="process">
+        @for (stage of process; track stage; let i = $index) {
+          <li class="process-stage">
+            <span class="process-number" aria-hidden="true">{{ i + 1 }}</span>
+            {{ stage }}
           </li>
         }
       </ol>
@@ -85,10 +154,13 @@
   </section>
 
   @if (tiers.hasValue() && tiers.value().length > 0) {
-    <section class="section section--tinted" aria-labelledby="tiers-title">
+    <section class="section" id="acceso" aria-labelledby="tiers-title">
       <div class="page-container">
         <h2 id="tiers-title" class="section-title">Niveles de acceso</h2>
-        <p class="section-lead">Cada nivel incluye el contenido de los anteriores.</p>
+        <p class="section-lead">
+          Los artículos son gratis con tu cuenta. Los niveles desbloquean guías y recursos de estudio, y cada
+          uno incluye lo anterior.
+        </p>
         <ul class="tiers">
           @for (tier of tiers.value(); track tier.id; let last = $last) {
             <li>
@@ -108,13 +180,43 @@
     </section>
   }
 
-  <section class="section" aria-labelledby="cta-title">
+  <section class="section section--tinted" aria-labelledby="soon-title">
+    <div class="page-container">
+      <mat-card appearance="outlined" class="soon">
+        <mat-icon class="soon-icon" aria-hidden="true">forum</mat-icon>
+        <div>
+          <p class="soon-tag">Próximamente</p>
+          <h2 id="soon-title" class="soon-title">Pases de caso y sesiones con especialistas</h2>
+          <p class="soon-text">
+            Estamos preparando sesiones para llevar lo leído a la práctica. Todavía no hay fechas ni cupos
+            anunciados; crea tu cuenta y te avisaremos cuando existan.
+          </p>
+        </div>
+      </mat-card>
+    </div>
+  </section>
+
+  <section class="section" id="preguntas" aria-labelledby="faq-title">
+    <div class="page-container faq-wrap">
+      <h2 id="faq-title" class="section-title">Preguntas frecuentes</h2>
+      <div class="faq">
+        @for (faq of faqs; track faq.question) {
+          <details class="faq-item">
+            <summary>{{ faq.question }}</summary>
+            <p>{{ faq.answer }}</p>
+          </details>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--tinted" aria-labelledby="cta-title">
     <div class="page-container closing">
       <h2 id="cta-title" class="section-title">Empieza con tu primer artículo</h2>
       <app-medical-disclaimer class="closing-disclaimer" />
       @if (!auth.isAuthenticated()) {
         <div class="hero-actions">
-          <a matButton="filled" routerLink="/registro" class="cta">Crear cuenta</a>
+          <a matButton="filled" routerLink="/registro" class="cta">Crear cuenta gratis</a>
           <a matButton routerLink="/login" class="cta">Ya tengo cuenta</a>
         </div>
       }

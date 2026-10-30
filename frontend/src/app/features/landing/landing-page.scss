@@ -331,3 +331,238 @@ main {
   justify-content: space-between;
   gap: 8px;
 }
+
+.preview-badge {
+  padding: 2px 10px;
+  border-radius: var(--mat-sys-corner-full);
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+  font: var(--mat-sys-label-small);
+}
+
+// Algoritmo de ejemplo: dibujado con CSS para que se adapte al tema y no dependa de imágenes.
+.flow {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  margin: 0 0 20px;
+}
+
+.flow-node {
+  padding: 10px 16px;
+  border-radius: var(--mat-sys-corner-medium);
+  font: var(--mat-sys-label-large);
+  text-align: center;
+
+  &--start {
+    background: var(--mat-sys-primary);
+    color: var(--mat-sys-on-primary);
+  }
+
+  &--a {
+    background: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+  }
+
+  &--b {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}
+
+.flow-branches {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  padding-top: 16px;
+
+  // Conectores: línea vertical desde el criterio y barra horizontal sobre las dos ramas.
+  &::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    height: 16px;
+    border-left: 2px solid var(--mat-sys-outline);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 25%;
+    right: 25%;
+    border-top: 2px solid var(--mat-sys-outline);
+  }
+}
+
+.flow-branch {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.flow-label {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-small);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.preview-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0;
+
+  div {
+    padding: 10px 12px;
+    border-radius: var(--mat-sys-corner-medium);
+    background: var(--mat-sys-surface-container);
+  }
+
+  dt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-label-small);
+
+    mat-icon {
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+    }
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font: var(--mat-sys-label-large);
+  }
+}
+
+.process {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.process-stage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-large);
+  background: var(--mat-sys-surface-container-lowest);
+  font: var(--mat-sys-title-small);
+}
+
+.process-number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  font: var(--mat-sys-label-large);
+}
+
+.soon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 28px;
+  border-radius: var(--mat-sys-corner-extra-large);
+}
+
+.soon-icon {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  font-size: 48px;
+  color: var(--mat-sys-tertiary);
+}
+
+.soon-tag {
+  margin: 0 0 4px;
+  color: var(--mat-sys-tertiary);
+  font: var(--mat-sys-label-large);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.soon-title {
+  margin: 0 0 8px;
+  font: var(--mat-sys-title-large);
+  font-family: var(--app-brand-font);
+  font-weight: 700;
+}
+
+.soon-text {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.faq-wrap {
+  max-width: 800px;
+}
+
+.faq {
+  display: grid;
+  gap: 8px;
+}
+
+.faq-item {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-medium);
+  background: var(--mat-sys-surface-container-lowest);
+
+  summary {
+    padding: 16px;
+    font: var(--mat-sys-title-small);
+    cursor: pointer;
+    // Marcador propio para que se vea igual en todos los navegadores.
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::after {
+      content: '+';
+      float: right;
+      color: var(--mat-sys-primary);
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--mat-sys-primary);
+      outline-offset: -2px;
+      border-radius: var(--mat-sys-corner-medium);
+    }
+  }
+
+  &[open] summary::after {
+    content: '−';
+  }
+
+  p {
+    margin: 0;
+    padding: 0 16px 16px;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}

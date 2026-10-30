@@ -1,4 +1,4 @@
-import { Component, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -9,6 +9,8 @@ import { Router, RouterLink } from '@angular/router';
 import { toApiError } from '../../core/api-error';
 import { AuthService } from '../../core/auth/auth.service';
 import { APP_NAME } from '../../core/brand';
+import { googleMessage } from '../../core/google-auth';
+import { GoogleSignIn } from '../../shared/google-sign-in/google-sign-in';
 
 @Component({
   selector: 'app-login-page',
@@ -20,6 +22,7 @@ import { APP_NAME } from '../../core/brand';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    GoogleSignIn,
   ],
   templateUrl: './login-page.html',
 })
@@ -30,11 +33,14 @@ export class LoginPage {
   /** Query params (`?returnUrl=…&sesion=expirada`) enlazados por el router. */
   readonly returnUrl = input<string>();
   readonly sesion = input<string>();
+  /** Código con el que el backend vuelve de Google (`?google=GOOGLE_CANCELADO`…). */
+  readonly google = input<string>();
 
   protected readonly appName = APP_NAME;
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly hidePassword = signal(true);
+  protected readonly googleError = computed(() => googleMessage(this.google()));
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     correo: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],

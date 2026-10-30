@@ -68,6 +68,13 @@ app:
     # Primer SUPER_ADMIN fuera del entorno demo. Sólo se aplica si no existe ninguno activo.
     bootstrap-super-admin-email: ${APP_BOOTSTRAP_SUPERADMIN_EMAIL:}
     bootstrap-super-admin-password: ${APP_BOOTSTRAP_SUPERADMIN_PASSWORD:}
+  google:
+    # Inicio de sesión con Google. Sin client-id y client-secret el botón no se muestra y los endpoints responden 404.
+    # La URI de retorno debe coincidir exactamente con la registrada en Google Cloud; por defecto es la del
+    # frontend, porque el proxy /api la reenvía a esta API y la cookie de sesión queda de primera parte.
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
+    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
+    redirect-uri: ${GOOGLE_OAUTH_REDIRECT_URI:${app.frontend-origin}/api/v1/auth/google/callback}
   content:
     # Qué hacer con una GPC publicada cuya vigencia o próxima revisión venció:
     # ADVERTIR (sigue visible con aviso «requiere actualización») o RETIRAR (deja de mostrarse).

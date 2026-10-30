@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -10,6 +11,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { applyFieldErrors, toApiError } from '../../core/api-error';
 import { AuthService } from '../../core/auth/auth.service';
+import { googleMessage } from '../../core/google-auth';
+import { GoogleSignIn } from '../../shared/google-sign-in/google-sign-in';
 import { noBlank } from '../../shared/validators';
 
 @Component({
@@ -23,6 +26,7 @@ import { noBlank } from '../../shared/validators';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    GoogleSignIn,
   ],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.scss',
@@ -31,7 +35,14 @@ export class ProfilePage {
   private readonly auth = inject(AuthService);
   private readonly snackBar = inject(MatSnackBar);
 
+  /** Código con el que el backend vuelve de Google (`?google=vinculada`…). */
+  readonly google = input<string>();
+
   protected readonly user = this.auth.user;
+  protected readonly googleResult = computed(() => googleMessage(this.google()));
+  protected readonly identities = rxResource({ stream: () => this.auth.identities() });
+  protected readonly unlinking = signal(false);
+  protected readonly unlinkError = signal<string | null>(null);
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
 
@@ -60,6 +71,25 @@ export class ProfilePage {
         if (!applyFieldErrors(this.form, apiError)) {
           this.errorMessage.set(apiError.message);
         }
+      },
+    });
+  }
+
+  protected unlinkGoogle(): void {
+    if (this.unlinking()) {
+      return;
+    }
+    this.unlinking.set(true);
+    this.unlinkError.set(null);
+    this.auth.unlinkGoogle().subscribe({
+      next: () => {
+        this.unlinking.set(false);
+        this.identities.reload();
+        this.snackBar.open('Google se desvinculó de tu cuenta', undefined, { duration: 3000 });
+      },
+      error: (error: unknown) => {
+        this.unlinking.set(false);
+        this.unlinkError.set(toApiError(error).message);
       },
     });
   }

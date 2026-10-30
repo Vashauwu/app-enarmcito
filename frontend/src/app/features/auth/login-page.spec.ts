@@ -18,10 +18,15 @@ describe('LoginPage', () => {
     fixture = TestBed.createComponent(LoginPage);
     httpMock = TestBed.inject(HttpTestingController);
     navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    // El botón de Google consulta los proveedores; estas pruebas no dependen de la respuesta.
+    TestBed.tick();
+    httpMock.expectOne('/api/v1/auth/proveedores').flush({ google: false });
     await fixture.whenStable();
   });
 
-  afterEach(() => httpMock.verify());
+  afterEach(() => {
+    httpMock.verify();
+  });
 
   function type(selector: string, value: string): void {
     const input = fixture.nativeElement.querySelector(selector) as HTMLInputElement;
@@ -87,5 +92,20 @@ describe('LoginPage', () => {
     await fixture.whenStable();
 
     expect(navigateByUrl).toHaveBeenCalledWith('/app');
+  });
+
+  it('explica por qué falló el acceso con Google', async () => {
+    fixture.componentRef.setInput('google', 'GOOGLE_CORREO_EXISTENTE');
+    await fixture.whenStable();
+
+    expect(text()).toContain('Ya existe una cuenta con ese correo');
+    expect(text()).toContain('vincula Google desde Mi perfil');
+  });
+
+  it('ignora códigos de Google desconocidos', async () => {
+    fixture.componentRef.setInput('google', '<script>');
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('.form-alert')).toBeNull();
   });
 });

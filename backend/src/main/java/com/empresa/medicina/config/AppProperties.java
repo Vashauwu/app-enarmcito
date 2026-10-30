@@ -11,10 +11,27 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param admin          parámetros del panel administrativo
  * @param content        políticas del catálogo de contenido
  * @param media          almacenamiento y validación de archivos
+ * @param google         inicio de sesión con Google
  */
 @ConfigurationProperties("app")
 public record AppProperties(String frontendOrigin, boolean demoData, Registration registration, Admin admin,
-		Content content, Media media) {
+		Content content, Media media, Google google) {
+
+	/**
+	 * Inicio de sesión con Google (OpenID Connect, flujo de código con PKCE y el backend como cliente
+	 * confidencial). Se desactiva solo cuando no hay {@code clientId}.
+	 *
+	 * @param clientId     ID de cliente OAuth web del ambiente
+	 * @param clientSecret secreto del cliente; nunca sale del backend
+	 * @param redirectUri  URI de retorno autorizada exactamente en Google Cloud
+	 */
+	public record Google(String clientId, String clientSecret, String redirectUri) {
+
+		public boolean habilitado() {
+			return clientId != null && !clientId.isBlank() && clientSecret != null && !clientSecret.isBlank();
+		}
+
+	}
 
 	/**
 	 * @param allowTierSelection si el usuario puede elegir su tier al registrarse. Sólo para pruebas

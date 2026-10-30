@@ -28,10 +28,16 @@ public class AuthenticatedUser implements UserDetails, CredentialsContainer {
 
 	private final List<GrantedAuthority> authorities;
 
+	/**
+	 * Valor para cuentas sin contraseña (creadas con Google): no es un hash válido, así que ninguna contraseña
+	 * coincide y el inicio de sesión por contraseña falla con credenciales inválidas, no con un error interno.
+	 */
+	private static final String SIN_PASSWORD = "{bcrypt}!";
+
 	private AuthenticatedUser(UUID id, String correo, String passwordHash, boolean enabled, Rol rol) {
 		this.id = id;
 		this.correo = correo;
-		this.passwordHash = passwordHash;
+		this.passwordHash = (passwordHash != null) ? passwordHash : SIN_PASSWORD;
 		this.enabled = enabled;
 		this.authorities = autoridades(rol);
 	}
